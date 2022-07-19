@@ -17,19 +17,18 @@
 #include "ntp_slope_types.h"
 #include "rt_nonfinite.h"
 #include "mwmathutil.h"
-#include <string.h>
 
 /* Function Definitions */
 void ntp_slope(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
-               const emxArray_real_T *Z, const real_T z_data[],
-               const int32_T z_size[2], real_T tolz, real_T dx_data[],
-               int32_T dx_size[2], real_T dy_data[], int32_T dy_size[2],
-               real_T sx_data[], int32_T sx_size[2], real_T sy_data[],
-               int32_T sy_size[2])
+               const emxArray_real_T *Z, const emxArray_real_T *z, real_T tolz,
+               emxArray_real_T *dx, emxArray_real_T *dy, emxArray_real_T *sx,
+               emxArray_real_T *sy)
 {
   emxArray_boolean_T *b;
   emxArray_boolean_T *r;
-  real_T K_data[4225];
+  emxArray_boolean_T *x;
+  emxArray_int32_T *y;
+  emxArray_real_T *K;
   real_T Sppc_data[152];
   real_T Tppc_data[152];
   real_T b_Sppc_data[152];
@@ -38,15 +37,11 @@ void ntp_slope(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
   real_T Zn_data[20];
   real_T km;
   real_T zm;
-  int32_T y_data[4225];
   int32_T Sppc_size[2];
   int32_T b_Sppc_size[2];
-  int32_T K_size_idx_0;
-  int32_T Tppc_size_idx_0;
   int32_T Zm_size;
   int32_T Zn_size;
   int32_T b_i;
-  int32_T b_loop_ub;
   int32_T i;
   int32_T i1;
   int32_T i2;
@@ -57,9 +52,7 @@ void ntp_slope(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
   int32_T npages;
   int32_T vlen;
   int32_T xpageoffset;
-  int8_T y_size[4];
-  int8_T sqsz[2];
-  boolean_T x_data[4225];
+  int16_T sqsz[2];
   boolean_T Zmat;
   boolean_T exitg1;
   emlrtHeapReferenceStackEnterFcnR2012b(emlrtRootTLSGlobal);
@@ -133,46 +126,50 @@ void ntp_slope(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
   /*  Email     : g.stanley@unsw.edu.au */
   /*  Email     : geoffstanley@gmail.com */
   /*  --- Input checks, set parameters */
-  if ((dx_size[0] == 0) || (dx_size[1] == 0)) {
-    dx_size[0] = 1;
-    dx_size[1] = 1;
-    dx_data[0] = 1.0;
+  if ((dx->size[0] == 0) || (dx->size[1] == 0)) {
+    i = dx->size[0] * dx->size[1];
+    dx->size[0] = 1;
+    dx->size[1] = 1;
+    emxEnsureCapacity_real_T(dx, i);
+    dx->data[0] = 1.0;
   }
-  if ((dy_size[0] == 0) || (dy_size[1] == 0)) {
-    dy_size[0] = 1;
-    dy_size[1] = 1;
-    dy_data[0] = 1.0;
+  if ((dy->size[0] == 0) || (dy->size[1] == 0)) {
+    i = dy->size[0] * dy->size[1];
+    dy->size[0] = 1;
+    dy->size[1] = 1;
+    emxEnsureCapacity_real_T(dy, i);
+    dy->data[0] = 1.0;
   }
-  ni = z_size[0];
+  ni = z->size[0];
   /*  --- Solve nonlinear problem for NTP depth difference between each pair of
    * adjacent casts */
   Zmat = (((Z->size[0] != 1) && (Z->size[1] != 1)) || (Z->size[2] != 1));
-  loop_ub = Z->size[0];
+  k = Z->size[0];
   Zm_size = Z->size[0];
-  for (i = 0; i < loop_ub; i++) {
+  for (i = 0; i < k; i++) {
     Zm_data[i] = Z->data[i];
   }
-  loop_ub = Z->size[0];
+  k = Z->size[0];
   Zn_size = Z->size[0];
-  for (i = 0; i < loop_ub; i++) {
+  for (i = 0; i < k; i++) {
     Zn_data[i] = Z->data[i];
   }
   emxInit_boolean_T(&b, 4, true);
   /*  K gives the number of valid bottles in each water column. */
   /*  Note that K >= 1.  Even where all bottles are invalid, i.e. land, K = 1.
    */
-  loop_ub = Sppc->size[1];
-  b_loop_ub = Sppc->size[2];
-  vlen = Sppc->size[3];
+  k = Sppc->size[1];
+  loop_ub = Sppc->size[2];
+  xpageoffset = Sppc->size[3];
   i = b->size[0] * b->size[1] * b->size[2] * b->size[3];
   b->size[0] = 1;
   b->size[1] = Sppc->size[1];
   b->size[2] = Sppc->size[2];
   b->size[3] = Sppc->size[3];
   emxEnsureCapacity_boolean_T(b, i);
-  for (i = 0; i < vlen; i++) {
-    for (i1 = 0; i1 < b_loop_ub; i1++) {
-      for (i2 = 0; i2 < loop_ub; i2++) {
+  for (i = 0; i < xpageoffset; i++) {
+    for (i1 = 0; i1 < loop_ub; i1++) {
+      for (i2 = 0; i2 < k; i2++) {
         b->data[(i2 + b->size[1] * i1) + b->size[1] * b->size[2] * i] =
             muDoubleScalarIsInf(
                 Sppc->data[(Sppc->size[0] * i2 +
@@ -182,18 +179,18 @@ void ntp_slope(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
     }
   }
   emxInit_boolean_T(&r, 4, true);
-  loop_ub = Sppc->size[1];
-  b_loop_ub = Sppc->size[2];
-  vlen = Sppc->size[3];
+  k = Sppc->size[1];
+  loop_ub = Sppc->size[2];
+  xpageoffset = Sppc->size[3];
   i = r->size[0] * r->size[1] * r->size[2] * r->size[3];
   r->size[0] = 1;
   r->size[1] = Sppc->size[1];
   r->size[2] = Sppc->size[2];
   r->size[3] = Sppc->size[3];
   emxEnsureCapacity_boolean_T(r, i);
-  for (i = 0; i < vlen; i++) {
-    for (i1 = 0; i1 < b_loop_ub; i1++) {
-      for (i2 = 0; i2 < loop_ub; i2++) {
+  for (i = 0; i < xpageoffset; i++) {
+    for (i1 = 0; i1 < loop_ub; i1++) {
+      for (i2 = 0; i2 < k; i2++) {
         r->data[(i2 + r->size[1] * i1) + r->size[1] * r->size[2] * i] =
             muDoubleScalarIsNaN(
                 Sppc->data[(Sppc->size[0] * i2 +
@@ -202,23 +199,26 @@ void ntp_slope(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
       }
     }
   }
-  loop_ub = b->size[1] * b->size[2] * b->size[3];
+  k = b->size[1] * b->size[2] * b->size[3];
   i = b->size[0] * b->size[1] * b->size[2] * b->size[3];
   b->size[0] = 1;
   emxEnsureCapacity_boolean_T(b, i);
-  for (i = 0; i < loop_ub; i++) {
+  for (i = 0; i < k; i++) {
     b->data[i] = ((!b->data[i]) && (!r->data[i]));
   }
   emxFree_boolean_T(&r);
+  emxInit_int32_T(&y, 4, true);
   vlen = b->size[1];
   if ((b->size[1] == 0) || (b->size[2] == 0) || (b->size[3] == 0)) {
-    y_size[0] = 1;
-    y_size[1] = 1;
-    y_size[2] = (int8_T)b->size[2];
-    y_size[3] = (int8_T)b->size[3];
-    loop_ub = (int8_T)b->size[2] * (int8_T)b->size[3];
-    if (0 <= loop_ub - 1) {
-      memset(&y_data[0], 0, loop_ub * sizeof(int32_T));
+    i = y->size[0] * y->size[1] * y->size[2] * y->size[3];
+    y->size[0] = 1;
+    y->size[1] = 1;
+    y->size[2] = (int16_T)b->size[2];
+    y->size[3] = (int16_T)b->size[3];
+    emxEnsureCapacity_int32_T(y, i);
+    k = (int16_T)b->size[2] * (int16_T)b->size[3];
+    for (i = 0; i < k; i++) {
+      y->data[i] = 0;
     }
   } else {
     npages = 1;
@@ -229,15 +229,17 @@ void ntp_slope(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
     for (xpageoffset = 3; xpageoffset <= k; xpageoffset++) {
       npages *= b->size[xpageoffset - 1];
     }
-    y_size[0] = 1;
-    y_size[1] = 1;
-    y_size[2] = (int8_T)b->size[2];
-    y_size[3] = (int8_T)b->size[3];
+    i = y->size[0] * y->size[1] * y->size[2] * y->size[3];
+    y->size[0] = 1;
+    y->size[1] = 1;
+    y->size[2] = (int16_T)b->size[2];
+    y->size[3] = (int16_T)b->size[3];
+    emxEnsureCapacity_int32_T(y, i);
     for (b_i = 0; b_i < npages; b_i++) {
       xpageoffset = b_i * b->size[1];
-      y_data[b_i] = b->data[xpageoffset];
+      y->data[b_i] = b->data[xpageoffset];
       for (k = 2; k <= vlen; k++) {
-        y_data[b_i] += b->data[(xpageoffset + k) - 1];
+        y->data[b_i] += b->data[(xpageoffset + k) - 1];
       }
     }
   }
@@ -245,39 +247,48 @@ void ntp_slope(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
   sqsz[0] = 1;
   sqsz[1] = 1;
   k = 4;
-  while ((k > 2) && (y_size[k - 1] == 1)) {
+  while ((k > 2) && (y->size[k - 1] == 1)) {
     k--;
   }
   if (k == 2) {
     sqsz[1] = 1;
   } else {
     j = 0;
-    if (y_size[2] != 1) {
+    if (y->size[2] != 1) {
       j = 1;
-      sqsz[0] = y_size[2];
+      sqsz[0] = (int16_T)y->size[2];
     }
-    if (y_size[3] != 1) {
-      sqsz[j] = y_size[3];
+    if (y->size[3] != 1) {
+      sqsz[j] = (int16_T)y->size[3];
     }
   }
-  K_size_idx_0 = sqsz[0];
-  vlen = sqsz[0] * sqsz[1];
-  for (i = 0; i < vlen; i++) {
-    K_data[i] = (real_T)y_data[i] + 1.0;
+  emxInit_real_T(&K, 2, true);
+  i = K->size[0] * K->size[1];
+  K->size[0] = sqsz[0];
+  K->size[1] = sqsz[1];
+  emxEnsureCapacity_real_T(K, i);
+  xpageoffset = sqsz[0] * sqsz[1];
+  for (i = 0; i < xpageoffset; i++) {
+    K->data[i] = (real_T)y->data[i] + 1.0;
   }
+  emxFree_int32_T(&y);
   /*  Loop over each water column.   */
   /*  Note this calculation assumes a doubly-periodic domain */
   /*  The NTP slope is grad_n z, where z < 0 */
   /*  Negative sign added to ntp_midpoint_to_casts results because we've been z
    * > 0 people. */
-  i = z_size[1];
-  sx_size[0] = (int8_T)z_size[0];
-  sx_size[1] = (int8_T)z_size[1];
-  sy_size[0] = (int8_T)z_size[0];
-  sy_size[1] = (int8_T)z_size[1];
+  i = z->size[1];
+  i1 = sx->size[0] * sx->size[1];
+  sx->size[0] = (int16_T)z->size[0];
+  sx->size[1] = (int16_T)z->size[1];
+  emxEnsureCapacity_real_T(sx, i1);
+  i1 = sy->size[0] * sy->size[1];
+  sy->size[0] = (int16_T)z->size[0];
+  sy->size[1] = (int16_T)z->size[1];
+  emxEnsureCapacity_real_T(sy, i1);
   for (j = 0; j < i; j++) {
     xpageoffset = j - 1;
-    if (z_size[1] == 0) {
+    if (z->size[1] == 0) {
       if (j - 1 == 0) {
         xpageoffset = 0;
       }
@@ -285,9 +296,9 @@ void ntp_slope(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
       xpageoffset = 0;
     } else {
       xpageoffset =
-          (int32_T)muDoubleScalarRem(((real_T)j + 1.0) - 2.0, z_size[1]);
+          (int32_T)muDoubleScalarRem(((real_T)j + 1.0) - 2.0, z->size[1]);
       if ((xpageoffset != 0) && (j - 1 < 0)) {
-        xpageoffset += z_size[1];
+        xpageoffset += z->size[1];
       }
     }
     for (b_i = 0; b_i < ni; b_i++) {
@@ -304,113 +315,112 @@ void ntp_slope(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
           vlen += ni;
         }
       }
-      npages = z_size[0] * j;
-      zm = z_data[b_i + npages];
-      k = K_size_idx_0 * j;
-      km = K_data[b_i + k];
+      zm = z->data[b_i + z->size[0] * j];
+      km = K->data[b_i + K->size[0] * j];
       if (Zmat) {
-        loop_ub = Z->size[0];
+        k = Z->size[0];
         Zm_size = Z->size[0];
-        for (i1 = 0; i1 < loop_ub; i1++) {
+        for (i1 = 0; i1 < k; i1++) {
           Zm_data[i1] =
               Z->data[(i1 + Z->size[0] * b_i) + Z->size[0] * Z->size[1] * j];
         }
-        loop_ub = Z->size[0];
+        k = Z->size[0];
         Zn_size = Z->size[0];
-        for (i1 = 0; i1 < loop_ub; i1++) {
+        for (i1 = 0; i1 < k; i1++) {
           Zn_data[i1] =
               Z->data[(i1 + Z->size[0] * vlen) + Z->size[0] * Z->size[1] * j];
         }
       }
       /*  --- NTP with neighbour in i dimension */
-      loop_ub = Sppc->size[0];
-      b_loop_ub = Sppc->size[1];
+      k = Sppc->size[0];
+      loop_ub = Sppc->size[1];
       Sppc_size[0] = Sppc->size[0];
       Sppc_size[1] = Sppc->size[1];
-      for (i1 = 0; i1 < b_loop_ub; i1++) {
-        for (i2 = 0; i2 < loop_ub; i2++) {
+      for (i1 = 0; i1 < loop_ub; i1++) {
+        for (i2 = 0; i2 < k; i2++) {
           Sppc_data[i2 + Sppc_size[0] * i1] =
               Sppc->data[((i2 + Sppc->size[0] * i1) +
                           Sppc->size[0] * Sppc->size[1] * b_i) +
                          Sppc->size[0] * Sppc->size[1] * Sppc->size[2] * j];
         }
       }
-      loop_ub = Tppc->size[0];
-      b_loop_ub = Tppc->size[1];
-      Tppc_size_idx_0 = Tppc->size[0];
-      for (i1 = 0; i1 < b_loop_ub; i1++) {
-        for (i2 = 0; i2 < loop_ub; i2++) {
-          Tppc_data[i2 + Tppc_size_idx_0 * i1] =
+      k = Tppc->size[0];
+      loop_ub = Tppc->size[1];
+      npages = Tppc->size[0];
+      for (i1 = 0; i1 < loop_ub; i1++) {
+        for (i2 = 0; i2 < k; i2++) {
+          Tppc_data[i2 + npages * i1] =
               Tppc->data[((i2 + Tppc->size[0] * i1) +
                           Tppc->size[0] * Tppc->size[1] * b_i) +
                          Tppc->size[0] * Tppc->size[1] * Tppc->size[2] * j];
         }
       }
-      loop_ub = Sppc->size[0];
-      b_loop_ub = Sppc->size[1];
+      k = Sppc->size[0];
+      loop_ub = Sppc->size[1];
       b_Sppc_size[0] = Sppc->size[0];
       b_Sppc_size[1] = Sppc->size[1];
-      for (i1 = 0; i1 < b_loop_ub; i1++) {
-        for (i2 = 0; i2 < loop_ub; i2++) {
+      for (i1 = 0; i1 < loop_ub; i1++) {
+        for (i2 = 0; i2 < k; i2++) {
           b_Sppc_data[i2 + b_Sppc_size[0] * i1] =
               Sppc->data[((i2 + Sppc->size[0] * i1) +
                           Sppc->size[0] * Sppc->size[1] * vlen) +
                          Sppc->size[0] * Sppc->size[1] * Sppc->size[2] * j];
         }
       }
-      loop_ub = Tppc->size[0];
-      b_loop_ub = Tppc->size[1];
-      Tppc_size_idx_0 = Tppc->size[0];
-      for (i1 = 0; i1 < b_loop_ub; i1++) {
-        for (i2 = 0; i2 < loop_ub; i2++) {
-          b_Tppc_data[i2 + Tppc_size_idx_0 * i1] =
+      k = Tppc->size[0];
+      loop_ub = Tppc->size[1];
+      npages = Tppc->size[0];
+      for (i1 = 0; i1 < loop_ub; i1++) {
+        for (i2 = 0; i2 < k; i2++) {
+          b_Tppc_data[i2 + npages * i1] =
               Tppc->data[((i2 + Tppc->size[0] * i1) +
                           Tppc->size[0] * Tppc->size[1] * vlen) +
                          Tppc->size[0] * Tppc->size[1] * Tppc->size[2] * j];
         }
       }
-      sx_data[b_i + sx_size[0] * j] = -ntp_midpoint_to_casts(
+      sx->data[b_i + sx->size[0] * j] = -ntp_midpoint_to_casts(
           Sppc_data, Sppc_size, Tppc_data, Zm_data, Zm_size, km, b_Sppc_data,
-          b_Sppc_size, b_Tppc_data, Zn_data, Zn_size, K_data[vlen + k], zm,
-          z_data[vlen + npages], tolz);
+          b_Sppc_size, b_Tppc_data, Zn_data, Zn_size,
+          K->data[vlen + K->size[0] * j], zm, z->data[vlen + z->size[0] * j],
+          tolz);
       /*  --- NTP with neighbour in j dimension */
       if (Zmat) {
-        loop_ub = Z->size[0];
+        k = Z->size[0];
         Zn_size = Z->size[0];
-        for (i1 = 0; i1 < loop_ub; i1++) {
+        for (i1 = 0; i1 < k; i1++) {
           Zn_data[i1] = Z->data[(i1 + Z->size[0] * b_i) +
                                 Z->size[0] * Z->size[1] * xpageoffset];
         }
       }
-      loop_ub = Sppc->size[0];
-      b_loop_ub = Sppc->size[1];
+      k = Sppc->size[0];
+      loop_ub = Sppc->size[1];
       Sppc_size[0] = Sppc->size[0];
       Sppc_size[1] = Sppc->size[1];
-      for (i1 = 0; i1 < b_loop_ub; i1++) {
-        for (i2 = 0; i2 < loop_ub; i2++) {
+      for (i1 = 0; i1 < loop_ub; i1++) {
+        for (i2 = 0; i2 < k; i2++) {
           Sppc_data[i2 + Sppc_size[0] * i1] =
               Sppc->data[((i2 + Sppc->size[0] * i1) +
                           Sppc->size[0] * Sppc->size[1] * b_i) +
                          Sppc->size[0] * Sppc->size[1] * Sppc->size[2] * j];
         }
       }
-      loop_ub = Tppc->size[0];
-      b_loop_ub = Tppc->size[1];
-      Tppc_size_idx_0 = Tppc->size[0];
-      for (i1 = 0; i1 < b_loop_ub; i1++) {
-        for (i2 = 0; i2 < loop_ub; i2++) {
-          Tppc_data[i2 + Tppc_size_idx_0 * i1] =
+      k = Tppc->size[0];
+      loop_ub = Tppc->size[1];
+      npages = Tppc->size[0];
+      for (i1 = 0; i1 < loop_ub; i1++) {
+        for (i2 = 0; i2 < k; i2++) {
+          Tppc_data[i2 + npages * i1] =
               Tppc->data[((i2 + Tppc->size[0] * i1) +
                           Tppc->size[0] * Tppc->size[1] * b_i) +
                          Tppc->size[0] * Tppc->size[1] * Tppc->size[2] * j];
         }
       }
-      loop_ub = Sppc->size[0];
-      b_loop_ub = Sppc->size[1];
+      k = Sppc->size[0];
+      loop_ub = Sppc->size[1];
       b_Sppc_size[0] = Sppc->size[0];
       b_Sppc_size[1] = Sppc->size[1];
-      for (i1 = 0; i1 < b_loop_ub; i1++) {
-        for (i2 = 0; i2 < loop_ub; i2++) {
+      for (i1 = 0; i1 < loop_ub; i1++) {
+        for (i2 = 0; i2 < k; i2++) {
           b_Sppc_data[i2 + b_Sppc_size[0] * i1] =
               Sppc->data[((i2 + Sppc->size[0] * i1) +
                           Sppc->size[0] * Sppc->size[1] * b_i) +
@@ -418,70 +428,79 @@ void ntp_slope(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                              xpageoffset];
         }
       }
-      loop_ub = Tppc->size[0];
-      b_loop_ub = Tppc->size[1];
-      Tppc_size_idx_0 = Tppc->size[0];
-      for (i1 = 0; i1 < b_loop_ub; i1++) {
-        for (i2 = 0; i2 < loop_ub; i2++) {
-          b_Tppc_data[i2 + Tppc_size_idx_0 * i1] =
+      k = Tppc->size[0];
+      loop_ub = Tppc->size[1];
+      npages = Tppc->size[0];
+      for (i1 = 0; i1 < loop_ub; i1++) {
+        for (i2 = 0; i2 < k; i2++) {
+          b_Tppc_data[i2 + npages * i1] =
               Tppc->data[((i2 + Tppc->size[0] * i1) +
                           Tppc->size[0] * Tppc->size[1] * b_i) +
                          Tppc->size[0] * Tppc->size[1] * Tppc->size[2] *
                              xpageoffset];
         }
       }
-      sy_data[b_i + sy_size[0] * j] = -ntp_midpoint_to_casts(
+      sy->data[b_i + sy->size[0] * j] = -ntp_midpoint_to_casts(
           Sppc_data, Sppc_size, Tppc_data, Zm_data, Zm_size, km, b_Sppc_data,
           b_Sppc_size, b_Tppc_data, Zn_data, Zn_size,
-          K_data[b_i + K_size_idx_0 * xpageoffset], zm,
-          z_data[b_i + z_size[0] * xpageoffset], tolz);
+          K->data[b_i + K->size[0] * xpageoffset], zm,
+          z->data[b_i + z->size[0] * xpageoffset], tolz);
     }
     /*  i */
   }
+  emxFree_real_T(&K);
+  emxInit_boolean_T(&x, 1, true);
   /*  j */
   /*  Divide by horizontal distances */
-  xpageoffset = dx_size[0] * dx_size[1];
-  for (i = 0; i < xpageoffset; i++) {
-    x_data[i] = (dx_data[i] == 1.0);
+  i = x->size[0];
+  x->size[0] = dx->size[0] * dx->size[1];
+  emxEnsureCapacity_boolean_T(x, i);
+  k = dx->size[0] * dx->size[1];
+  for (i = 0; i < k; i++) {
+    x->data[i] = (dx->data[i] == 1.0);
   }
   Zmat = true;
-  vlen = 1;
+  xpageoffset = 1;
   exitg1 = false;
-  while ((!exitg1) && (vlen <= xpageoffset)) {
-    if (!x_data[vlen - 1]) {
+  while ((!exitg1) && (xpageoffset <= x->size[0])) {
+    if (!x->data[xpageoffset - 1]) {
       Zmat = false;
       exitg1 = true;
     } else {
-      vlen++;
+      xpageoffset++;
     }
   }
   if (!Zmat) {
-    xpageoffset = dy_size[0] * dy_size[1];
-    for (i = 0; i < xpageoffset; i++) {
-      x_data[i] = (dy_data[i] == 1.0);
+    i = x->size[0];
+    x->size[0] = dy->size[0] * dy->size[1];
+    emxEnsureCapacity_boolean_T(x, i);
+    k = dy->size[0] * dy->size[1];
+    for (i = 0; i < k; i++) {
+      x->data[i] = (dy->data[i] == 1.0);
     }
     Zmat = true;
-    vlen = 1;
+    xpageoffset = 1;
     exitg1 = false;
-    while ((!exitg1) && (vlen <= xpageoffset)) {
-      if (!x_data[vlen - 1]) {
+    while ((!exitg1) && (xpageoffset <= x->size[0])) {
+      if (!x->data[xpageoffset - 1]) {
         Zmat = false;
         exitg1 = true;
       } else {
-        vlen++;
+        xpageoffset++;
       }
     }
     if (!Zmat) {
-      loop_ub = (int8_T)z_size[0] * (int8_T)z_size[1];
-      for (i = 0; i < loop_ub; i++) {
-        sx_data[i] /= dx_data[i];
+      k = sx->size[0] * sx->size[1];
+      for (i = 0; i < k; i++) {
+        sx->data[i] /= dx->data[i];
       }
-      loop_ub = (int8_T)z_size[0] * (int8_T)z_size[1];
-      for (i = 0; i < loop_ub; i++) {
-        sy_data[i] /= dy_data[i];
+      k = sy->size[0] * sy->size[1];
+      for (i = 0; i < k; i++) {
+        sy->data[i] /= dy->data[i];
       }
     }
   }
+  emxFree_boolean_T(&x);
   emlrtHeapReferenceStackLeaveFcnR2012b(emlrtRootTLSGlobal);
 }
 

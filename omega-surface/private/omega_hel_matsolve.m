@@ -160,8 +160,8 @@ rhs = zeros(N+1,1);
 rhs(1:N) = -ehel(m) .* sqrtAREA(m);
 
 % Normal Equations
-rhs = mat' * rhs;
-mat = mat' * mat;
+rhs_N = mat' * rhs;
+mat_N = mat' * mat;
 
 % condition_numer = condest(mat);
 
@@ -183,9 +183,9 @@ mat = mat' * mat;
 
 %% Levenberg-Marquardt
 if LM > 0
-    mat_rms = rms(mat(mat ~= 0));
+    mat_rms = rms(mat_N(mat_N ~= 0));
     assert(isfinite(mat_rms), 'matrix has some NaN''s; cannot proceed.');
-    mat = mat + (LM * mat_rms) * speye(N);
+    mat_N = mat_N + (LM * mat_rms) * speye(N);
 end
 
 %% TK
@@ -202,15 +202,22 @@ if TK > 0
     tik = sparse(r, c, val, num_eq, N);
     
     % Apply regularization.  Note tik' * tik is a Laplacian.  Could build that directly...
-    mat = mat + TK * (tik' * tik);
+    mat_N = mat_N + TK * (tik' * tik);
     % Note that adding Tikhonov makes pinning not quite perfect.
     % In one test, the solution drifted 6.36cm at ref cast...  current solution is PIN_RIGID
 end
 
 %% solution
+alpha = max(sum(abs(mat_N),2)./diag(mat_N))-2;
+L = ichol(mat_N, struct('type','ict','droptol',1e-3,'diagcomp',alpha));
 
-sol = mat \ rhs;
-% sol = pcg(mat, rhs);
+%sol = mat_N \ rhs_N;
+sol = pcg(mat_N, rhs_N, 1e-7, 200, L, L');
+% eta = 10;
+% for iteration = 1:1000
+%     gradients = 2/N * mat'*(mat*sol-rhs);
+%     sol = sol - eta * gradients;
+% end
 
 dz = zeros(ni, nj);
 dz(m) = sol;

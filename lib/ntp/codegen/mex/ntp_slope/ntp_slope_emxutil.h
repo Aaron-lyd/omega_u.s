@@ -25,14 +25,21 @@
 void emxEnsureCapacity_boolean_T(emxArray_boolean_T *emxArray,
                                  int32_T oldNumel);
 
+void emxEnsureCapacity_int32_T(emxArray_int32_T *emxArray, int32_T oldNumel);
+
 void emxEnsureCapacity_real_T(emxArray_real_T *emxArray, int32_T oldNumel);
 
 void emxFree_boolean_T(emxArray_boolean_T **pEmxArray);
+
+void emxFree_int32_T(emxArray_int32_T **pEmxArray);
 
 void emxFree_real_T(emxArray_real_T **pEmxArray);
 
 void emxInit_boolean_T(emxArray_boolean_T **pEmxArray, int32_T numDimensions,
                        boolean_T doPush);
+
+void emxInit_int32_T(emxArray_int32_T **pEmxArray, int32_T numDimensions,
+                     boolean_T doPush);
 
 void emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions,
                     boolean_T doPush);

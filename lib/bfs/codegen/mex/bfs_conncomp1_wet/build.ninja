@@ -6,7 +6,7 @@ ninja_required_version = 1.3
 root = .
 builddir = $root/build/maci64
 matlabdir = /Applications/MATLAB_R2021a.app
-startdir = /Users/yandonglang/Library/CloudStorage/OneDrive-UNSW/1. YL_PHD/10. omega_hel code/neutral-surfaces/lib/bfs
+startdir = /Users/yandonglang/Library/CloudStorage/OneDrive-UNSW/1. YL_PHD/10. omega_hel code/omega_u.s/lib/bfs
 
 # Toolchain information
 cc = /usr/bin/xcrun -sdk macosx10.15 clang

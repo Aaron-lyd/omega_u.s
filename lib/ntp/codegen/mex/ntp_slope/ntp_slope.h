@@ -23,10 +23,8 @@
 
 /* Function Declarations */
 void ntp_slope(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
-               const emxArray_real_T *Z, const real_T z_data[],
-               const int32_T z_size[2], real_T tolz, real_T dx_data[],
-               int32_T dx_size[2], real_T dy_data[], int32_T dy_size[2],
-               real_T sx_data[], int32_T sx_size[2], real_T sy_data[],
-               int32_T sy_size[2]);
+               const emxArray_real_T *Z, const emxArray_real_T *z, real_T tolz,
+               emxArray_real_T *dx, emxArray_real_T *dy, emxArray_real_T *sx,
+               emxArray_real_T *sy);
 
 /* End of code generation (ntp_slope.h) */

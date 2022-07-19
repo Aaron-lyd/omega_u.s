@@ -115,7 +115,7 @@ codegen('ppc_val2', '-report', '-args', {t_Z, t_Sppc, t_Sppc, t_s, 0})
 ni_ = max(4096, ni);
 nj_ = max(4096, nj);
 nk_ = max(128, nk);
-ntp_slope_codegen(nk_, ni_, nj_, isvector(P));
+ntp_slope_codegen(nk_, ni_, nj_, isvector(SB));
 
 %% Grid information
 OPTS.nx = g.nx; 
