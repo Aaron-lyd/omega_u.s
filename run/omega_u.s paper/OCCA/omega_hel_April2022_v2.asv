@@ -4,6 +4,7 @@ datafolder='/Users/yandonglang/OneDrive - UNSW/1. YL_PHD/3. Code/First year code
 
 [g, SB, TB, pB, ETAN, ATMP, SAP] = load_OCCA(datafolder);
 
+% add something
 % Reshape the data into correct shape
 tB = eos80_legacy_pt(SB,TB,zeros(size(SB)),pB); % 1980 code
 SB = permute(SB, [3 1 2]);
@@ -99,7 +100,7 @@ OPTS = [];
 
 %% omega_1
 OPTS = [];
-
+OPTS.POISSON = 0;
 OPTS.INTERPFN = interpfn;
 
 [zns, sns, tns, dns] = omega_surface(SB, TB, ZB, z_sigma, I0,[1;1], OPTS); %in x-y direction
@@ -114,7 +115,7 @@ codegen('ppc_val2', '-report', '-args', {t_Z, t_Sppc, t_Sppc, t_s, 0})
 ni_ = max(4096, ni);
 nj_ = max(4096, nj);
 nk_ = max(128, nk);
-ntp_slope_codegen(nk_, ni_, nj_, isvector(P));
+ntp_slope_codegen(nk_, ni_, nj_, isvector(SB));
 
 %% Grid information
 OPTS.nx = g.nx; 
@@ -140,6 +141,7 @@ OPTS.data_cube=0;
 OPTS.ITER = 100;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
+OPTS.PCG = 0;
 
 OPTS.LM = 0;
 OPTS.TK = 1e-5;
@@ -154,7 +156,7 @@ OPTS.MODE = 1;
 
 %% omega_hel_Tz
 OPTS.data_cube=0;
-OPTS.ITER = 500;
+OPTS.ITER = 100;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
 
@@ -167,7 +169,7 @@ OPTS.MODE = 9;
 
 %% omega_hel_Sz
 OPTS.data_cube=0;
-OPTS.ITER = 500;
+OPTS.ITER = 100;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
 
@@ -180,15 +182,15 @@ OPTS.MODE = 10;
            
 %% omega_s
 OPTS.MODE = 2;
-OPTS.STRAT = 1;
-OPTS.SHEAR = 1;
+OPTS.STRAT = 0;
+OPTS.SHEAR = 0;
 % OPTS.LM = 1e-3;
 OPTS.TK = 0;
-OPTS.H_SIM = 1;
+OPTS.H_SIM = 0;
 % OPTS.LM = 0;
 % OPTS.TK = 1e-8;
 
-OPTS.ITER = 500;
+OPTS.ITER = 100;
 
 [zns_s,sns_s,tns_s, ~, d_s] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
 
@@ -196,7 +198,7 @@ OPTS.ITER = 500;
 OPTS.MODE = 6;
 OPTS.STRAT = 1;
 OPTS.SHEAR = 1;
-OPTS.ITER = 500;
+OPTS.ITER = 100;
 OPTS.H_SIM = 0;
 
 OPTS.LM = 0;
@@ -208,7 +210,7 @@ OPTS.TK = 1e-9;
 [zns_s2xy,sns_s2xy,tns_s2xy, ~, d_s2xy] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
 
 %% omega_hel_s2xy 
-OPTS.ITER = 500;
+OPTS.ITER = 100;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
 

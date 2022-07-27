@@ -100,7 +100,7 @@ OPTS = [];
 
 %% omega_1
 OPTS = [];
-
+OPTS.POISSON = 0;
 OPTS.INTERPFN = interpfn;
 
 [zns, sns, tns, dns] = omega_surface(SB, TB, ZB, z_sigma, I0,[1;1], OPTS); %in x-y direction
@@ -141,6 +141,7 @@ OPTS.data_cube=0;
 OPTS.ITER = 100;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
+OPTS.PCG = 0;
 
 OPTS.LM = 0;
 OPTS.TK = 1e-5;
@@ -188,6 +189,7 @@ OPTS.TK = 0;
 OPTS.H_SIM = 1;
 % OPTS.LM = 0;
 % OPTS.TK = 1e-8;
+OPTS.TOL_LSQR_REL = 1e-6;
 
 OPTS.ITER = 100;
 

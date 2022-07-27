@@ -1,5 +1,5 @@
 %% load data
-ni = 2^8+1; nj = ni; nk = 20; wall = 1; helicity = 0.2; U_M = 0;
+ni = 2^8+1; nj = ni; nk = 20; wall = 1; helicity = 5; U_M = 0;
 [S, T, P,U_M,V_M, ~, phii] = datacube(ni,nj,nk,helicity,wall,U_M,1,0);
 
 % interpolate salinity and temperature on the neutral density surface
@@ -132,8 +132,8 @@ OPTS_DC.INTERPFN = @ppc_pchip;
 % OPTS.WRAP = [1;1];
 OPTS_DC.FIGS_SHOW = 0;
 
-% omega_hel
-v_mode =3;
+% velocity
+v_mode =2;
 if v_mode ==1 % purely rotational random
     u_field = squeeze(U_smooth(1,:,:))';
     U_f = U_curl;
@@ -151,7 +151,8 @@ elseif v_mode ==3 % irrotational Gaussian (on checkerboard)
     OPTS_DC.WRAP = [1;1];
 end
 
-OPTS_DC.ITER = 50;
+OPTS_DC.PCG = 0;
+OPTS_DC.ITER = 500;
 OPTS_DC.SHEAR = 0;
 OPTS_DC.STRAT = 0;
 
@@ -159,11 +160,11 @@ OPTS_DC.LM = 0;
 % OPTS_DC.TK = 1e-5;
 OPTS_DC.TK = 0;
 
-OPTS_DC.MODE = 1;
+OPTS_DC.MODE = 1; %omega_u.s surface
 
 [z_hel_dc,s_hel_dc,t_hel_dc, ~,d_hel_dc] = omega_hel_surface(S, T, P, U_f, V_f, zns_dc, OPTS_DC);
 
-% s, e^hel and flux
+%% s, e^hel and flux
 % prepare for the grid information
 OPT_DC.DXCvec = g.DXCvec(80); % dx
 OPT_DC.DYCsc = g.DYCsc; % dy
@@ -179,55 +180,129 @@ OPT_DC.tolz = 1e-8; % tolerance of slope error
 % s, ehel and flux for omega+
 OPT_DC.MODES = 0; % using epsilon to calculate slope errors
 OPT_DC.MODEHEL = 1; % Using divergence method to calculate e^hel
-[~, ~, ~, ~, ehelns_dc, ehelns_dc_rms, ~, detailns] =...
+[s_ns_dc, ~, s_ns_dc_rms, ~, ehelns_dc, ehelns_dc_rms, ~, detailns_dc] =...
     s_ehel_flux(sns_dc,tns_dc, zns_dc, S, T, P, U_f, V_f, [1;1], OPT_DC);
 
 % s, ehel and flux for omega_hel
 OPT_DC.MODES = 0; % using NTP to calculate slope errors
 OPT_DC.MODEHEL = 1; % using divergence method to calculate e^hel
-[~, ~, ~, ~, ehel_hel_dc, ehel_hel_dc_rms, ~, ~] =...
+[shel_dc, ~, s_hel_dc_rms, ~, ehel_hel_dc, ehel_hel_dc_rms, ~, detail_hel_dc] =...
     s_ehel_flux(s_hel_dc,t_hel_dc, z_hel_dc, S, T, P, U_f, V_f, [1;1], OPT_DC);
+
+% cos theta
+costheta_ns = ehelns_dc./(abs(s_ns_dc).*abs(detailns_dc.u_t));
+costheta_hel = ehel_hel_dc./(abs(shel_dc).*abs(detail_hel_dc.u_t));
+
+% Helicity
+A_vor = g.RAZvec(80); % the area of the vorticity cell
+% A_vor_3D = permute(repmat(A_vor, [360 1 50]), [3 1 2]);
+
+H_3D = hel(S, T, P, A_vor);
+
+H_hel = interpfn(P, H_3D, z_hel_dc);
+H_ns = interpfn(P, H_3D, zns_dc);
+
 
 %% Figure 1:e^hel maps
 OPTS_AXES = {'Margin', .05, 'Spacing', .05};
-figure('Position', [0 0 1000 1000])
+figure('Position', [0 0 1400 1000])
 
-ax1 = subaxis(2,1,1, OPTS_AXES{:});
+ax1 = subaxis(3,2,1, OPTS_AXES{:});
 imagesc(u_field);
 hold on
 contour(u_field, 40, 'k')
 quiver(A_X(squeeze(U_f(1,:,:)))', A_Y(squeeze(V_f(1,:,:)))', 1, 'k')
 title('Velocity field', 'fontsize',16,'Interpreter','latex');
 
-ax2 = subaxis(2,1,2, OPTS_AXES{:});
+ax2 = subaxis(3,2,2, OPTS_AXES{:});
 pcolor(ehel_hel_dc)
 shading flat
 %caxis([-5e-13, 5e-13])
 colormap(ax2, bluewhitered), colorbar
-txt = '$e^{hel}$ on $\\omega_{hel}$-surface, RMS = %.2d m/s';
+X = (1:ni)';
+Y = (1:nj);
+pcol_logsigned(ax2, X, Y, ehel_hel_dc, -18, -12);
+txt = '$e^{u}$ on $\\omega_{\\bf{u} \\cdot \\bf{s}}$-surface, RMS = %.2d m/s';
 title(sprintf(txt ,ehel_hel_dc_rms) , 'fontsize',10,'Interpreter','latex');
 set(gca,'fontsize', 18);
 
-%% Figure 1:e^hel maps for omega_hel and omega+
-OPTS_AXES = {'Margin', .05, 'Spacing', .05};
-figure('Position', [0 0 1000 1000])
+ax3 = subaxis(3,2,3, OPTS_AXES{:});
+pcolor(log10(shel_dc))
+shading flat
+%caxis([-5e-13, 5e-13])
+% colormap(ax3, bluewhitered), 
+colorbar
+txt = '$log_{10} (|\\bf{s}|)$ on $\\omega_{\\bf{u} \\cdot \\bf{s}}$-surface, RMS = %.2d m/s';
+title(sprintf(txt ,s_hel_dc_rms) , 'fontsize',10,'Interpreter','latex');
+set(gca,'fontsize', 18);
 
-ax1 = subaxis(2,1,1, OPTS_AXES{:});
+ax4 = subaxis(3,2,4, OPTS_AXES{:});
+pcolor(costheta_hel)
+shading flat
+caxis([-1, 1])
+cm = parula(64);
+cm = [cm(1:end-1,:); flipud(cm)];
+colormap(ax4,cm);
+colorbar(ax4)
+txt = '$\\mathbf{u} \\cdot \\mathbf{s}/|\\mathbf{u}||\\mathbf{s}|$ on $\\omega_{\\bf{u} \\cdot \\bf{s}}$-surface';
+title(sprintf(txt) , 'fontsize',10,'Interpreter','latex');
+set(gca,'fontsize', 18);
+
+ax5 = subaxis(3,2,5, OPTS_AXES{:});
+pcolor(H_hel)
+shading flat
+%caxis([-5e-13, 5e-13])
+colormap(ax5, bluewhitered), colorbar
+pcol_logsigned(ax5, X, Y, H_hel, -25, -19);
+txt = 'Helicity on $\\omega_{\\bf{u} \\cdot \\bf{s}}$-surface';
+title(sprintf(txt) , 'fontsize',10,'Interpreter','latex');
+set(gca,'fontsize', 18);
+
+%% Figure 2: maps for and omega+
+OPTS_AXES = {'Margin', .05, 'Spacing', .05};
+figure('Position', [0 0 1600 1000])
+
+ax1 = subaxis(2,2,1, OPTS_AXES{:});
 pcolor(ehelns_dc)
 shading flat
 % caxis([-5e-14, 5e-14]) 
 colormap(ax1, bluewhitered), colorbar
-txt = '(a) $e^{hel}$ on $\\omega_+$-surface, RMS = %.2d m/s';
+pcol_logsigned(ax1, X, Y, ehel_hel_dc, -18, -12);
+
+txt = '(a) $e^{u}$ on $\\omega_+$-surface, RMS = %.2d m/s';
 title(sprintf(txt ,ehelns_dc_rms) , 'fontsize',10,'Interpreter','latex');
 set(gca,'fontsize', 18);
 
-ax2 = subaxis(2,1,2, OPTS_AXES{:});
-pcolor(ehel_hel_dc)
+ax2 = subaxis(2,2,2, OPTS_AXES{:});
+pcolor(log10(s_ns_dc))
 shading flat
-% caxis([-5e-14, 5e-14])
-colormap(ax2, bluewhitered), colorbar
-txt = '(b) $e^{hel}$ on $\\omega_{hel}$-surface, RMS = %.2d m/s';
-title(sprintf(txt ,ehel_hel_dc_rms) , 'fontsize',10,'Interpreter','latex');
+%caxis([-5e-13, 5e-13])
+% colormap(ax3, bluewhitered), 
+colorbar
+txt = '$log_{10} (|\\bf{s}|)$ on $\\omega_+$-surface, RMS = %.2d m/s';
+title(sprintf(txt ,s_ns_dc_rms) , 'fontsize',10,'Interpreter','latex');
+set(gca,'fontsize', 18);
+
+ax3 = subaxis(2,2,3, OPTS_AXES{:});
+pcolor(costheta_ns)
+shading flat
+caxis([-1, 1])
+cm = parula(64);
+cm = [cm(1:end-1,:); flipud(cm)];
+colormap(ax3,cm);
+colorbar(ax3)
+txt = '$\\mathbf{u} \\cdot \\mathbf{s}/|\\mathbf{u}||\\mathbf{s}|$ on $\\omega_+$-surface';
+title(sprintf(txt) , 'fontsize',10,'Interpreter','latex');
+set(gca,'fontsize', 18);
+
+ax4 = subaxis(2,2,4, OPTS_AXES{:});
+pcolor(H_ns)
+shading flat
+%caxis([-5e-13, 5e-13])
+colormap(ax4, bluewhitered), colorbar
+pcol_logsigned(ax4, X, Y, H_ns, -25, -19);
+txt = 'Helicity on $\\omega_+$-surface';
+title(sprintf(txt) , 'fontsize',10,'Interpreter','latex');
 set(gca,'fontsize', 18);
 
 

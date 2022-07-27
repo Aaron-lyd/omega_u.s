@@ -25,10 +25,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                      real_T tolp, const emxArray_real_T *phi)
 {
   emxArray_real_T *Pn;
-  real_T Sppc_data[152];
-  real_T Sppcn_data[152];
-  real_T Tppc_data[152];
-  real_T Tppcn_data[152];
+  real_T Sppc_data[392];
+  real_T Sppcn_data[392];
+  real_T Tppc_data[392];
+  real_T Tppcn_data[392];
   real_T b_d;
   real_T b_p;
   real_T b_s;

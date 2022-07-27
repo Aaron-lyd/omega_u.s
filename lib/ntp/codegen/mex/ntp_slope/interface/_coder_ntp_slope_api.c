@@ -157,7 +157,7 @@ static void i_emlrt_marshallIn(const mxArray *src,
                                const emlrtMsgIdentifier *msgId,
                                emxArray_real_T *ret)
 {
-  static const int32_T dims[4] = {8, 19, 257, 257};
+  static const int32_T dims[4] = {8, 49, 360, 160};
   int32_T iv[4];
   int32_T i;
   const boolean_T bv[4] = {true, true, true, true};
@@ -180,7 +180,7 @@ static void j_emlrt_marshallIn(const mxArray *src,
                                const emlrtMsgIdentifier *msgId,
                                emxArray_real_T *ret)
 {
-  static const int32_T dims[3] = {20, 257, 257};
+  static const int32_T dims[3] = {50, 360, 160};
   int32_T iv[3];
   int32_T i;
   const boolean_T bv[3] = {true, true, true};
@@ -202,7 +202,7 @@ static void k_emlrt_marshallIn(const mxArray *src,
                                const emlrtMsgIdentifier *msgId,
                                emxArray_real_T *ret)
 {
-  static const int32_T dims[2] = {257, 257};
+  static const int32_T dims[2] = {360, 160};
   int32_T iv[2];
   int32_T i;
   const boolean_T bv[2] = {true, true};

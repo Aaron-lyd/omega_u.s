@@ -284,7 +284,7 @@ for iter = 1 : n_iter
   elseif mode == 10 % omega_hel weighted by Sz
       [dz, ehelSz, N] = omega_hel_Sz_matsolve(z, Z, SppZ, TppZ, Sz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
   elseif mode == 11 % omega_s_lsqr
-      [dz, N]       = omega_s_matsolve_test(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY, sx, sy, dzi, dzj, i0, j0, I0, A4, OPTS);
+      [dz, N]       = omega_s_matsolve(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY, sx, sy, dzi, dzj, i0, j0, I0, A4, OPTS);
   end
     
   % --- Update the surface
@@ -326,7 +326,7 @@ for iter = 1 : n_iter
   d.clocktime(iter) = toc(iter_tic);
   
   % diagnostic sentence
-  if mode == 2 || 11
+  if mode == 2
       fprintf('Iter %2d: (%6.2f sec), log10(|sx|_2) = %.6f, log10(|sy|_2) = %.6f, log10(|Δz|_2) = %.2f, mean depth = %.2f, mean(eos) = %.6e, # casts = %4d\n', ...
           iter, d.clocktime(iter), log10(d.sx_rms(iter)), log10(d.sy_rms(iter)), log10(d.dz_rms(iter)), d.mean_z(iter), d.mean_eos(iter), N);
   elseif mode == 1

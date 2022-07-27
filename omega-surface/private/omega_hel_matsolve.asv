@@ -165,9 +165,9 @@ mat_N = mat' * mat;
 
 % condition_numer = condest(mat);
 
-% [eVec, eVal] = eig(full(mat));
-% diag_eval = diag(eVal);
-% min(diag_eval)
+[eVec, eVal] = eig(full(mat_N));
+diag_eval = diag(eVal);
+min(diag_eval)
 % 
 % [eVal_sort,ind] = sort(diag(eVal));
 % eVecs = eVec(:,ind);
@@ -208,14 +208,14 @@ if TK > 0
 end
 
 %% solution
-
-%sol = mat_N \ rhs_N;
-sol = pcg(mat_N, rhs_N， 1e-);
-% eta = 10;
-% for iteration = 1:1000
-%     gradients = 2/N * mat'*(mat*sol-rhs);
-%     sol = sol - eta * gradients;
-% end
+PCG = OPTS.PCG;
+if PCG
+    alpha = max(sum(abs(mat_N),2)./diag(mat_N))-2;
+    L = ichol(mat_N, struct('type','ict','droptol',1e-3,'diagcomp',alpha));
+    sol = pcg(mat_N, rhs_N, 1e-7, 200, L, L');
+else
+    sol = mat_N \ rhs_N;
+end
 
 dz = zeros(ni, nj);
 dz(m) = sol;

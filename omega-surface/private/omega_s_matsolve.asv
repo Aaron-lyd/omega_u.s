@@ -1,6 +1,7 @@
 function [dz, N] = omega_s_matsolve(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY, sx, sy, dzi, dzj, i0, j0, I0, A4, OPTS)
 
 %
+PINNING = 0;
 STRAT_MIN = 0;
 STRAT = OPTS.STRAT;
 H_SIM = OPTS.H_SIM;
@@ -127,7 +128,11 @@ neqy = length(rhsy);
 neq = neqx + neqy; % Number of equations, excluding density conserving equation.
 
 % Build indices for the rows of the sparse matrix
-row = [(1:neq)';(1:neq)'];
+if PINNING
+    row = [(1:neq)';(1:neq)'];
+else
+    row = [(1:neq)';(1:neq)'; repelem(neq+1, N, 1)];
+end
 
 % Build indices for the columns of the sparse matrix of slope error
 c = remap(A4(:,m).'); 
@@ -135,7 +140,12 @@ c_0 = flat(1:N); % z'
 c_1 = c(:,1); % jm1
 c_2 = c(:,2); % im1
 
-col = [c_2(good_eqx); c_1(good_eqy); c_0(good_eqx); c_0(good_eqy)];
+if PINNNING
+    col = [c_2(good_eqx); c_1(good_eqy); c_0(good_eqx); c_0(good_eqy)];
+else
+    col = [c_2(good_eqx); c_1(good_eqy); c_0(good_eqx); c_0(good_eqy); (1:N)];
+end
+    
 
 % Build the values of the sparse matrix
 p1x = repelem(1, 1, neqx)';
@@ -143,9 +153,15 @@ p1y = repelem(1, 1, neqy)';
 
 % val = [-p1x ./ DXCm(good_eqx); -p1y ./ DYCm(good_eqy);...
 %         p1x ./ DXCm(good_eqx);  p1y ./ DYCm(good_eqy)];
-
-val = [-p1x ./ DXCm(good_eqx) .* sqrtAREAXm(good_eqx); -p1y ./ DYCm(good_eqy) .* sqrtAREAYm(good_eqy);...
+F = 0.01;
+if PINNING
+    
+    val = [-p1x ./ DXCm(good_eqx) .* sqrtAREAXm(good_eqx); -p1y ./ DYCm(good_eqy) .* sqrtAREAYm(good_eqy);...
         p1x ./ DXCm(good_eqx) .* sqrtAREAXm(good_eqx);  p1y ./ DYCm(good_eqy) .* sqrtAREAYm(good_eqy)];
+else
+    val = [-p1x ./ DXCm(good_eqx) .* sqrtAREAXm(good_eqx); -p1y ./ DYCm(good_eqy) .* sqrtAREAYm(good_eqy);...
+        p1x ./ DXCm(good_eqx) .* sqrtAREAXm(good_eqx);  p1y ./ DYCm(good_eqy) .* sqrtAREAYm(good_eqy); ...
+        repelem(F, N, 1)];
     
 if STRAT
     % H terms
@@ -167,10 +183,10 @@ if STRAT
 end
 
 % Build the sparse matrix, with neq rows and N columns
-mat = sparse(row, col, val, neq+1, N );
+mat = sparse(row, col, val, neq, N );
 
 %% Surface constraint
-PINNING = 1;
+
 if PINNING
     
     % pinning
@@ -180,10 +196,10 @@ else
     
     % average depth to be zero
     F = 0.01;
+    mat = full(mat);
     mat(neq+1, :) = F * ones(1,N);
     mat = sparse(mat);
 end
-
 
 % Normal Equations
 rhs = mat' * rhs;

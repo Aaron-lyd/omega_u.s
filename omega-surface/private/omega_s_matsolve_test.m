@@ -1,4 +1,4 @@
-function [dz, N] = omega_s_matsolve(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY, sx, sy, dzi, dzj, i0, j0, I0, A4, OPTS)
+function [dz, N] = omega_s_matsolve_test(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY, sx, sy, dzi, dzj, i0, j0, I0, A4, OPTS)
 
 %
 STRAT_MIN = 0;
@@ -112,15 +112,15 @@ sqrtAREAYm = sqrtAREAY(m);
 % sxm = sx(m);
 % sym = sy(m);
 
-sxm = sx(m).*sqrtAREAX(m);
-sym = sy(m).*sqrtAREAY(m);
+sxm = sx(m);
+sym = sy(m);
 
 good_eqx = ~isnan(sxm);
 good_eqy = ~isnan(sym);
 rhsx = sxm(good_eqx);
 rhsy = sym(good_eqy);
 
-rhs = -[rhsx; rhsy;0];
+rhs = -[rhsx; rhsy];
 neqx = length(rhsx);
 neqy = length(rhsy);
 
@@ -144,8 +144,8 @@ p1y = repelem(1, 1, neqy)';
 % val = [-p1x ./ DXCm(good_eqx); -p1y ./ DYCm(good_eqy);...
 %         p1x ./ DXCm(good_eqx);  p1y ./ DYCm(good_eqy)];
 
-val = [-p1x ./ DXCm(good_eqx) .* sqrtAREAXm(good_eqx); -p1y ./ DYCm(good_eqy) .* sqrtAREAYm(good_eqy);...
-        p1x ./ DXCm(good_eqx) .* sqrtAREAXm(good_eqx);  p1y ./ DYCm(good_eqy) .* sqrtAREAYm(good_eqy)];
+val = [-p1x ./ DXCm(good_eqx); -p1y ./ DYCm(good_eqy) ;...
+        p1x ./ DXCm(good_eqx) ;  p1y ./ DYCm(good_eqy)];
     
 if STRAT
     % H terms
@@ -167,51 +167,49 @@ if STRAT
 end
 
 % Build the sparse matrix, with neq rows and N columns
-mat = sparse(row, col, val, neq+1, N );
+mat = sparse(row, col, val, neq, N );
 
 %% Surface constraint
-PINNING = 1;
-if PINNING
-    
-    % pinning
-    mr = remap(i0,j0);
-    mat(neq+1,mr) = 100* rms(val);
-else
-    
-    % average depth to be zero
-    F = 0.01;
-    mat(neq+1, :) = F * ones(1,N);
-    mat = sparse(mat);
-end
+mr = remap(i0,j0);
+% PINNING = 0;
+% if PINNING
+%     % pinning
+%     mat(neq+1,mr) = 100* rms(val);
+% else
+%     
+%     % average depth to be zero
+%     F = 1e-8;
+%     mat(neq+1, :) = F * ones(1,N);
+%     mat = sparse(mat);
+% end
 
+%% Solve the problem
+PCG = OPTS.PCG;
+TOL_LSQR_REL = OPTS.TOL_LSQR_REL;
 
-% Normal Equations
-rhs = mat' * rhs;
-mat = mat' * mat;
+% if PCG
+%     % Normal Equations
+%     rhs_N = mat' * rhs;
+%     mat_N = mat' * mat;
+%     alpha = max(sum(abs(mat_N),2)./diag(mat_N))-2;
+%     L = ichol(mat_N, struct('type','ict','droptol',1e-3,'diagcomp',alpha));
+%     sol = pcg(mat_N, rhs_N, 1e-7, 200, L, L');
+% else
+%     [sol,flag] = omega_lsqr(mat, rhs, TOL_LSQR_REL);
+%     if flag > 0
+%         warning('omega_surface:lsqr did not converge.');
+%     end
+% end
+% pinning
+mr = remap(i0,j0);
 
-%% Levenberg-Marquardt
-if LM > 0
-    mat_rms = rms(mat(mat ~= 0));
-    assert(isfinite(mat_rms), 'matrix has some NaN''s; cannot proceed.');
-    mat = mat + (LM * mat_rms) * speye(N);
-end
+% F = 1e-2;
+Aeq = zeros(1,N);
+Aeq(mr) = 1;
 
-%% TK
-if TK > 0
-    % using a high-pass filter, specifically a difference operator: grad phi
-    val3 = [-p1x ; -p1y; p1x;  p1y];
-    
-    % uniform grid of unity
-    tik = sparse(row, col, val3, neq, N);
-    
-    % Apply regularization.  Note tik' * tik is a Laplacian.  Could build that directly...
-    mat = mat + TK * (tik' * tik);
-    % Note that adding Tikhonov makes pinning not quite perfect.
-    % In one test, the solution drifted 6.36cm at ref cast...  current solution is PIN_RIGID
-end
+sol = lsqlin(mat, rhs, [], [], Aeq, 0,[],[]);
 
-%% Solve
-sol = mat \ rhs;
+% sol = sol - sol(mr);
 
 dz = zeros(ni, nj);
 dz(m) = sol;

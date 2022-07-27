@@ -29,11 +29,11 @@ void bfs_conncomp1_wet(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
 {
   emxArray_boolean_T *G;
   emxArray_boolean_T *dry;
-  real_T Sppc_data[152];
-  real_T Tppc_data[152];
-  real_T b_Sppc_data[152];
-  real_T b_Tppc_data[152];
-  real_T Pn_data[20];
+  real_T Sppc_data[392];
+  real_T Tppc_data[392];
+  real_T b_Sppc_data[392];
+  real_T b_Tppc_data[392];
+  real_T Pn_data[50];
   real_T b_d;
   real_T b_r;
   real_T b_s;

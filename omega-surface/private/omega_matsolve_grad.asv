@@ -200,15 +200,7 @@ if flag > 0
   warning('omega_surface:lsqr did not converge.');
 end
 
-% lsqlin
 
-% F = 1e-2;
-% Aeq = zeros(1,N);
-% Aeq(1) = 1;
-% 
-% mat = mat(1:E, :);
-% rhs = rhs(1:E);
-% sol = lsqlin(mat, rhs, [], [], Aeq, 0, [], []);
 
 
 % Force phi(mr) = 0 exactly.  This keeps the surface pinned at its
