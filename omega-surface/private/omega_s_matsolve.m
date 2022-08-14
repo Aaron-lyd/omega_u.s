@@ -120,7 +120,7 @@ good_eqy = ~isnan(sym);
 rhsx = sxm(good_eqx);
 rhsy = sym(good_eqy);
 
-rhs = -[rhsx; rhsy;0];
+rhs = -[rhsx; rhsy];
 neqx = length(rhsx);
 neqy = length(rhsy);
 
@@ -167,27 +167,23 @@ if STRAT
 end
 
 % Build the sparse matrix, with neq rows and N columns
-mat = sparse(row, col, val, neq+1, N );
+mat = sparse(row, col, val, neq, N );
 
-%% Surface constraint
-PINNING = 1;
-if PINNING
-    
-    % pinning
-    mr = remap(i0,j0);
+mr = remap(i0,j0);
+
+CHOLESKY = OPTS.CHOLESKY;
+if CHOLESKY
     mat(neq+1,mr) = 100* rms(val);
+    rhs(neq+1) = 0;
+
+    % Normal Equations
+    rhs = mat' * rhs;
+    mat = mat' * mat;
 else
-    
-    % average depth to be zero
-    F = 0.01;
-    mat(neq+1, :) = F * ones(1,N);
-    mat = sparse(mat);
+    % Normal Equations
+    rhs = mat' * rhs;
+    mat = mat' * mat;
 end
-
-
-% Normal Equations
-rhs = mat' * rhs;
-mat = mat' * mat;
 
 %% Levenberg-Marquardt
 if LM > 0
@@ -211,7 +207,11 @@ if TK > 0
 end
 
 %% Solve
-sol = mat \ rhs;
+if CHOLESKY
+    sol = mat \ rhs;
+else
+    sol = nonzero_mean_brent_lsqlin(mat, rhs, mr, 1e-3*rms(val));
+end
 
 dz = zeros(ni, nj);
 dz(m) = sol;

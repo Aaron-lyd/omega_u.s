@@ -24,7 +24,7 @@
 /* Function Declarations */
 void ppc_val2(const emlrtStack *sp, const real_T X[20],
               const emxArray_real_T *C, const emxArray_real_T *D,
-              const emxArray_real_T *x, real_T d, emxArray_real_T *y,
-              emxArray_real_T *z);
+              const real_T x_data[], const int32_T x_size[2], real_T d,
+              emxArray_real_T *y, emxArray_real_T *z);
 
 /* End of code generation (ppc_val2.h) */

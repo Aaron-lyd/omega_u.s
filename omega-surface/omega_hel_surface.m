@@ -197,7 +197,7 @@ Z_bot = Z(BotK);
 interpfn = OPTS.INTERPFN;
 % interpfn = @ppc_linterp;
 % interpfn = @ppc_pchip;
-SppZ = interpfn(Z, S);
+SppZ = interpfn(Z, S); % S as a function of Z
 TppZ = interpfn(Z, T);
 UppZ = interpfn(Z, U); % knowing Z is 1D vector, horizontally uniform
 VppZ = interpfn(Z, V); % knowing Z is 1D vector, horizontally uniform
@@ -220,6 +220,7 @@ n_iter = OPTS.ITER;
 
 d = struct();
 d.ehel_rms = nan(n_iter,1);
+d.ehel_s2_rms = nan(n_iter,1);
 d.ehelx_rms = nan(n_iter,1);
 d.ehely_rms = nan(n_iter,1);
 d.dz_rms = nan(n_iter,1);
@@ -249,6 +250,9 @@ for iter = 1 : n_iter
   
   Tz = ppc_val_mex(Z, TppZ, z, 1);
   Sz = ppc_val_mex(Z, SppZ, z, 1);
+  
+  Tzz = ppc_val_mex(Z, TppZ, z, 2);
+  Szz = ppc_val_mex(Z, SppZ, z, 2);
   
   % --- Compute slope errors
   tolz = 1e-8;
@@ -280,11 +284,11 @@ for iter = 1 : n_iter
   elseif mode == 8 % omega_hel combines with omega_s2xy
       [dz,s2x,s2y, ehel, N] = omega_hels2xy_matsolve(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY,  u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
   elseif mode == 9 % omega_hel weighted by Tz
-      [dz, ehelTz, N] = omega_hel_Tz_matsolve(z, Z, SppZ, TppZ, Tz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
+      [dz, ehelTz, N] = omega_hel_Tz_matsolve(z, Z, SppZ, TppZ, Tz, Tzz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
   elseif mode == 10 % omega_hel weighted by Sz
-      [dz, ehelSz, N] = omega_hel_Sz_matsolve(z, Z, SppZ, TppZ, Sz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
+      [dz, ehelSz, N] = omega_hel_Sz_matsolve(z, Z, SppZ, TppZ, Sz, Szz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
   elseif mode == 11 % omega_s_lsqr
-      [dz, N]       = omega_s_matsolve_test(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY, sx, sy, dzi, dzj, i0, j0, I0, A4, OPTS);
+      [dz, N]       = omega_s_matsolve_lsqlin(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY, sx, sy, dzi, dzj, i0, j0, I0, A4, OPTS);
   end
     
   % --- Update the surface
@@ -310,7 +314,7 @@ for iter = 1 : n_iter
       d.ehelx_rms(iter) = nanrms(ehelx(:));
       d.ehely_rms(iter) = nanrms(ehely(:));
   elseif mode == 8
-      d.ehel_rms(iter) = root_mean_square(ehel(:));
+      d.ehel_s2_rms(iter) = root_mean_square(ehel(:)) + nanrms(s2x(:))+ nanrms(s2y(:));
   elseif mode == 9
       d.ehelTz_rms(iter) = root_mean_square(ehelTz(:));
   elseif mode == 10
@@ -326,7 +330,7 @@ for iter = 1 : n_iter
   d.clocktime(iter) = toc(iter_tic);
   
   % diagnostic sentence
-  if mode == 2 || 11
+  if mode == 2
       fprintf('Iter %2d: (%6.2f sec), log10(|sx|_2) = %.6f, log10(|sy|_2) = %.6f, log10(|Δz|_2) = %.2f, mean depth = %.2f, mean(eos) = %.6e, # casts = %4d\n', ...
           iter, d.clocktime(iter), log10(d.sx_rms(iter)), log10(d.sy_rms(iter)), log10(d.dz_rms(iter)), d.mean_z(iter), d.mean_eos(iter), N);
   elseif mode == 1
@@ -348,8 +352,8 @@ for iter = 1 : n_iter
       fprintf('Iter %2d: (%6.2f sec), log10(|ehel|_2) = %.6f, log10(|ehelx|_2) = %.6f, log10(|ehely|_2) = %.6f, log10(|Δz|_2) = %.2f, mean depth = %.2f, mean(eos) = %.6e, # casts = %4d\n', ...
           iter, d.clocktime(iter), log10(d.ehel_rms(iter)), log10(d.ehelx_rms(iter)), log10(d.ehely_rms(iter)), log10(d.dz_rms(iter)), d.mean_z(iter), d.mean_eos(iter), N);
   elseif mode == 8
-      fprintf('Iter %2d: (%6.2f sec), log10(|ehel|_2) = %.6f, log10(|Δz|_2) = %.2f, mean depth = %.2f, mean(eos) = %.6e, # casts = %4d\n', ...
-          iter, d.clocktime(iter), log10(d.ehel_rms(iter)), log10(d.dz_rms(iter)), d.mean_z(iter), d.mean_eos(iter), N);
+      fprintf('Iter %2d: (%6.2f sec), log10(|ehel+s2|_2) = %.6f, log10(|Δz|_2) = %.2f, mean depth = %.2f, mean(eos) = %.6e, # casts = %4d\n', ...
+          iter, d.clocktime(iter), log10(d.ehel_s2_rms(iter)), log10(d.dz_rms(iter)), d.mean_z(iter), d.mean_eos(iter), N);
   elseif mode == 9
       fprintf('Iter %2d: (%6.2f sec), log10(|ehelTz|_2) = %.6f, log10(|Δz|_2) = %.2f, mean depth = %.2f, mean(eos) = %.6e, # casts = %4d\n', ...
           iter, d.clocktime(iter), log10(d.ehelTz_rms(iter)), log10(d.dz_rms(iter)), d.mean_z(iter), d.mean_eos(iter), N);

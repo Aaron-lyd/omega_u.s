@@ -169,7 +169,7 @@ good_eqy = ~isnan(s2ym);
 s2x = s2xm(good_eqx);
 s2y = s2ym(good_eqy);
 
-rhs = -[s2x; s2y;0];
+rhs = -[s2x; s2y];
 neqx = length(s2x);
 neqy = length(s2y);
 
@@ -216,14 +216,20 @@ end
 % Build the sparse matrix, with neq+1 rows and nwc columns
 mat = sparse(row, col, val, neq, N );
 
-%% New pinning
 mr = remap(i0,j0);
-% mat(neq+1,mr) = 1e-2;
-mat(neq+1,mr) =100* rms(val);
 
-% Normal Equations
-rhs = mat' * rhs;
-mat = mat' * mat;
+CHOLESKY = OPTS.CHOLESKY;
+if CHOLESKY
+    mat(neq+1,mr) = 100* rms(val);
+    rhs(neq+1) = 0;
+
+    % Normal Equations
+    rhs = mat' * rhs;
+    mat = mat' * mat;
+else
+    rhs = mat' * rhs;
+    mat = mat' * mat;
+end
 
 %% Levenberg-Marquardt
 if LM > 0
@@ -249,7 +255,11 @@ if TK > 0
 end
 
 %% Solve
-sol = mat \ rhs;
+if CHOLESKY
+    sol = mat \ rhs;
+else
+    sol = nonzero_mean_brent_lsqlin(mat, rhs, mr, 1e-3*rms(val));
+end
 
 dz = zeros(ni, nj);
 dz(m) = sol;

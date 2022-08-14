@@ -29,6 +29,8 @@ TppZ = interpfn(Z, T);
 UppZ = interpfn(Z, U); % knowing Z is 1D vector, horizontally uniform
 VppZ = interpfn(Z, V); % knowing Z is 1D vector, horizontally uniform
 
+DATACUBE = OPT.data_cube;
+
 %% slope error
 mode_s = OPT.MODES;
 if mode_s == 1 % for omege+
@@ -114,14 +116,15 @@ sy_rms = sqrt(nansum(s2y_grid(:))/nansum(AreaY(:)));
 s_rms = sqrt( (nansum(s2x_grid(:))+nansum(s2y_grid(:)))/(nansum(AreaX(:))+nansum(AreaY(:))));
 s2_rms = sqrt( (nansum(s4x_grid(:))+nansum(s4y_grid(:)))/(nansum(AreaX(:))+nansum(AreaY(:))));
 
-% sx_st = sx(:,136:146);
-% sy_st = sy(:,136:146);
 
-sx_st = 0;
-sy_st = 0;
+if ~DATACUBE
+    sx_st = sx(:,136:146);
+    sy_st = sy(:,136:146);
+end
 
 goodx_st = ~isnan(sx_st);
 goody_st = ~isnan(sy_st);
+
 
 if isscalar(OPT.DXCvec)
     AreaX = OPT.DXCvec .* OPT.DYGsc;
@@ -134,20 +137,24 @@ else
     
     AreaX = repmat((OPT.DXCvec .* OPT.DYGsc), [nx 1]);
     AreaY = repmat((OPT.DXGvec .* OPT.DYCsc), [nx 1]);
-%     AreaX_st = AreaX(:,136:146);
-%     AreaY_st = AreaY(:,136:146);
-    
-%     s2stx_grid = sx_st(goodx_st) .^2 .* AreaX_st(goodx_st);
-%     s2sty_grid = sy_st(goody_st) .^2 .* AreaY_st(goody_st);
-%     s4stx_grid = sx_st(goodx_st) .^4 .* AreaX_st(goodx_st);
-%     s4sty_grid = sy_st(goody_st) .^4 .* AreaY_st(goody_st);
+    if ~DATACUBE
+        AreaX_st = AreaX(:,136:146);
+        AreaY_st = AreaY(:,136:146);
+        
+        s2stx_grid = sx_st(goodx_st) .^2 .* AreaX_st(goodx_st);
+        s2sty_grid = sy_st(goody_st) .^2 .* AreaY_st(goody_st);
+        s4stx_grid = sx_st(goodx_st) .^4 .* AreaX_st(goodx_st);
+        s4sty_grid = sy_st(goody_st) .^4 .* AreaY_st(goody_st);
+    end
 end
 
-% sx_st_rms = sqrt(nansum(s2stx_grid(:))/nansum(AreaX_st(:)));
-% sy_st_rms = sqrt(nansum(s2sty_grid(:))/nansum(AreaY_st(:)));
-% 
-% s_st_rms = sqrt( (nansum(s2stx_grid(:))+nansum(s2sty_grid(:)))/(nansum(AreaX_st(:))+nansum(AreaY_st(:))));
-% s2_st_rms = sqrt( (nansum(s4stx_grid(:))+nansum(s4sty_grid(:)))/(nansum(AreaX_st(:))+nansum(AreaY_st(:))));
+if ~DATACUBE
+    sx_st_rms = sqrt(nansum(s2stx_grid(:))/nansum(AreaX_st(:)));
+    sy_st_rms = sqrt(nansum(s2sty_grid(:))/nansum(AreaY_st(:)));
+    
+    s_st_rms = sqrt( (nansum(s2stx_grid(:))+nansum(s2sty_grid(:)))/(nansum(AreaX_st(:))+nansum(AreaY_st(:))));
+    s2_st_rms = sqrt( (nansum(s4stx_grid(:))+nansum(s4sty_grid(:)))/(nansum(AreaX_st(:))+nansum(AreaY_st(:))));
+end
 
 %% ehel and flux
 % u, v on the u and v grid
@@ -186,11 +193,14 @@ if mode_hel == 1 % divergence method to calculate ehel
     good = ~isnan(e_hel_rms);
     e_hel_rms = rms(e_hel_rms(good));
     
-%     e_hel_st = e_hel(:,136:146);
-    
-%     e_hel_st_rms = e_hel_st - nanmean(e_hel_st(:));
-%     good = ~isnan(e_hel_st_rms);
-%     e_hel_st_rms = rms(e_hel_st_rms(good));
+    if ~DATACUBE
+        
+        e_hel_st = e_hel(:,136:146);
+        
+        e_hel_st_rms = e_hel_st - nanmean(e_hel_st(:));
+        good = ~isnan(e_hel_st_rms);
+        e_hel_st_rms = rms(e_hel_st_rms(good));
+    end
     
     flux_u = e_hel_u .* weight_u;
     flux_v = e_hel_v .* weight_v;
@@ -204,6 +214,15 @@ else
     e_hel_rms = e_hel - nanmean(e_hel(:));
     good = ~isnan(e_hel_rms);
     e_hel_rms = rms(e_hel_rms(good));
+    
+    if ~DATACUBE
+        
+        e_hel_st = e_hel(:,136:146);
+        
+        e_hel_st_rms = e_hel_st - nanmean(e_hel_st(:));
+        good = ~isnan(e_hel_st_rms);
+        e_hel_st_rms = rms(e_hel_st_rms(good));
+    end
     
     % flux
     flux_u = e_hel_u .* weight_u;
@@ -233,12 +252,16 @@ d.sx = sx;
 d.sy = sy;
 d.sx_rms = sx_rms;
 d.sy_rms = sy_rms;
-% d.s2_st_rms = s2_st_rms;
+if ~DATACUBE
+    d.s2_st_rms = s2_st_rms;
+end
 d.e_hel_u = e_hel_u;
 d.e_hel_v = e_hel_v;
 d.e_hel_u_rms = e_hel_u_rms;
 d.e_hel_v_rms = e_hel_v_rms;
-% d.e_hel_st_rms = e_hel_st_rms;
+if ~DATACUBE
+    d.e_hel_st_rms = e_hel_st_rms;
+end
 d.flux_u = flux_u;
 d.flux_v = flux_v;
 d.flux_u_positive = flux_u_positive;

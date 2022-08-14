@@ -112,15 +112,15 @@ sqrtAREAYm = sqrtAREAY(m);
 % sxm = sx(m);
 % sym = sy(m);
 
-sxm = sx(m);
-sym = sy(m);
+sxm = sx(m).*sqrtAREAX(m);
+sym = sy(m).*sqrtAREAY(m);
 
 good_eqx = ~isnan(sxm);
 good_eqy = ~isnan(sym);
 rhsx = sxm(good_eqx);
 rhsy = sym(good_eqy);
 
-rhs = -[rhsx; rhsy;0];
+rhs = -[rhsx; rhsy];
 neqx = length(rhsx);
 neqy = length(rhsy);
 
@@ -144,8 +144,8 @@ p1y = repelem(1, 1, neqy)';
 % val = [-p1x ./ DXCm(good_eqx); -p1y ./ DYCm(good_eqy);...
 %         p1x ./ DXCm(good_eqx);  p1y ./ DYCm(good_eqy)];
 
-val = [-p1x ./ DXCm(good_eqx); -p1y ./ DYCm(good_eqy) ;...
-        p1x ./ DXCm(good_eqx) ;  p1y ./ DYCm(good_eqy)];
+val = [-p1x ./ DXCm(good_eqx) .* sqrtAREAXm(good_eqx); -p1y ./ DYCm(good_eqy) .* sqrtAREAYm(good_eqy);...
+        p1x ./ DXCm(good_eqx) .* sqrtAREAXm(good_eqx);  p1y ./ DYCm(good_eqy) .* sqrtAREAYm(good_eqy)];
     
 if STRAT
     % H terms
@@ -167,29 +167,54 @@ if STRAT
 end
 
 % Build the sparse matrix, with neq rows and N columns
-mat = sparse(row, col, val, neq+1, N );
+mat = sparse(row, col, val, neq, N );
 
 %% Surface constraint
-PINNING = 0;
-if PINNING
-    
-    % pinning
-    mr = remap(i0,j0);
-    mat(neq+1,mr) = 100* rms(val);
-else
-    
-    % average depth to be zero
-    F = 0.0001;
-    mat(neq+1, :) = F * ones(1,N);
-    mat = sparse(mat);
-end
+% mr = remap(i0,j0);
+% PINNING = 0;
+% if PINNING
+%     % pinning
+%     mat(neq+1,mr) = 100* rms(val);
+% else
+%     
+%     % average depth to be zero
+%     F = 1e-8;
+%     mat(neq+1, :) = F * ones(1,N);
+%     mat = sparse(mat);
+% end
 
-%% Solve the LSQR problem
-TOL_LSQR_REL = OPTS.TOL_LSQR_REL;
-[sol,flag] = omega_lsqr(mat, rhs, TOL_LSQR_REL);
-if flag > 0
-  warning('omega_surface:lsqr did not converge.');
-end
+%% Solve the problem
+% PCG = OPTS.PCG;
+% TOL_LSQR_REL = OPTS.TOL_LSQR_REL;
+
+% if PCG
+%     % Normal Equations
+%     rhs_N = mat' * rhs;
+%     mat_N = mat' * mat;
+%     alpha = max(sum(abs(mat_N),2)./diag(mat_N))-2;
+%     L = ichol(mat_N, struct('type','ict','droptol',1e-3,'diagcomp',alpha));
+%     sol = pcg(mat_N, rhs_N, 1e-7, 200, L, L');
+% else
+%     [sol,flag] = omega_lsqr(mat, rhs, TOL_LSQR_REL);
+%     if flag > 0
+%         warning('omega_surface:lsqr did not converge.');
+%     end
+% end
+
+% Normal Equations
+% rhs = mat' * rhs;
+% mat = mat' * mat;
+
+
+Aeq = ones(1,N);
+
+
+sol = lsqlin(mat, rhs, [],[], Aeq, 0.01, [],[]);
+
+% Transforming mean(z) = 0 method to pinning method
+%mr = remap(i0,j0);% pinning
+% sol = nonzero_mean_brent_lsqlin(mat, rhs, mr, 1e-3*rms(val));
+% sol = sol - sol(mr);
 
 dz = zeros(ni, nj);
 dz(m) = sol;

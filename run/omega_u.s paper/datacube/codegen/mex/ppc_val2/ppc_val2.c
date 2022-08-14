@@ -375,8 +375,8 @@ static void error(const emlrtStack *sp, const mxArray *b, const mxArray *c,
 
 void ppc_val2(const emlrtStack *sp, const real_T X[20],
               const emxArray_real_T *C, const emxArray_real_T *D,
-              const emxArray_real_T *x, real_T d, emxArray_real_T *y,
-              emxArray_real_T *z)
+              const real_T x_data[], const int32_T x_size[2], real_T d,
+              emxArray_real_T *y, emxArray_real_T *z)
 {
   static const int32_T iv[2] = {1, 34};
   static const int32_T iv1[2] = {1, 31};
@@ -417,9 +417,9 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
   int32_T n;
   int32_T nx;
   int32_T o;
-  int32_T szx_idx_1;
+  int32_T sz_idx_1;
   int32_T xM;
-  boolean_T b_x[4];
+  boolean_T x[4];
   boolean_T c_y;
   boolean_T exitg1;
   st.prev = sp;
@@ -479,46 +479,46 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
   /*  Version   : 1.0 */
   /*  History   : 24/10/2019 - initial release */
   /*  Set default to evaluate, not differentiate: */
-  O = (int16_T)C->size[0];
+  O = (int8_T)C->size[0];
   /*  Order of the piecewise polynomial */
   /*  number of knots of the piecewise polynomials */
-  L = (int16_T)x->size[0];
+  L = (int8_T)x_size[0];
   /*  number of levels to interpolate */
-  xM = (int16_T)x->size[1];
+  xM = (int8_T)x_size[1];
   /*  Handle case when L should be 1. */
-  if ((int16_T)x->size[0] * (int16_T)x->size[1] == 66049) {
+  if ((int8_T)x_size[0] * (int8_T)x_size[1] == 4225) {
     L = 1;
-    xM = 66049;
+    xM = 4225;
   }
   szy[0] = L;
-  szy[1] = 257.0;
-  szy[2] = 257.0;
+  szy[1] = 65.0;
+  szy[2] = 65.0;
   szy[3] = 1.0;
   /*  Add a trailing 1, to ensure 2 dimensions at least */
-  if ((xM != 1) && (xM != 66049)) {
+  if ((xM != 1) && (xM != 4225)) {
     b_y = NULL;
     m = emlrtCreateCharArray(2, &iv[0]);
     emlrtInitCharArrayR2013a((emlrtCTX)sp, 34, m, &u[0]);
     emlrtAssign(&b_y, m);
     d_y = NULL;
-    m = emlrtCreateDoubleScalar(66049.0);
+    m = emlrtCreateDoubleScalar(4225.0);
     emlrtAssign(&d_y, m);
     st.site = &r_emlrtRSI;
     error(&st, b_y, d_y, &emlrtMCI);
   }
-  b_x[0] = ((int16_T)C->size[0] == D->size[0]);
-  b_x[1] = true;
-  b_x[2] = true;
-  b_x[3] = true;
+  x[0] = ((int8_T)C->size[0] == D->size[0]);
+  x[1] = true;
+  x[2] = true;
+  x[3] = true;
   c_y = true;
-  szx_idx_1 = 0;
+  sz_idx_1 = 0;
   exitg1 = false;
-  while ((!exitg1) && (szx_idx_1 < 4)) {
-    if (!b_x[szx_idx_1]) {
+  while ((!exitg1) && (sz_idx_1 < 4)) {
+    if (!x[sz_idx_1]) {
       c_y = false;
       exitg1 = true;
     } else {
-      szx_idx_1++;
+      sz_idx_1++;
     }
   }
   if (!c_y) {
@@ -530,12 +530,12 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
     b_error(&st, e_y, &b_emlrtMCI);
   }
   st.site = &emlrtRSI;
-  nx = x->size[0] * x->size[1];
+  nx = x_size[0] * x_size[1];
   b_st.site = &f_emlrtRSI;
-  szx_idx_1 = computeDimsData(&b_st, nx, L);
-  n = x->size[0];
-  if (x->size[1] > x->size[0]) {
-    n = x->size[1];
+  sz_idx_1 = computeDimsData(&b_st, nx, L);
+  n = x_size[0];
+  if (x_size[1] > x_size[0]) {
+    n = x_size[1];
   }
   maxdimlen = muIntScalarMax_sint32(nx, n);
   if (L > maxdimlen) {
@@ -543,12 +543,12 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
                                   "Coder:toolbox:reshape_emptyReshapeLimit",
                                   "Coder:toolbox:reshape_emptyReshapeLimit", 0);
   }
-  if (szx_idx_1 > maxdimlen) {
+  if (sz_idx_1 > maxdimlen) {
     emlrtErrorWithMessageIdR2018a(&st, &b_emlrtRTEI,
                                   "Coder:toolbox:reshape_emptyReshapeLimit",
                                   "Coder:toolbox:reshape_emptyReshapeLimit", 0);
   }
-  i = L * szx_idx_1;
+  i = L * sz_idx_1;
   if (i != nx) {
     emlrtErrorWithMessageIdR2018a(
         &st, &emlrtRTEI, "Coder:MATLAB:getReshapeDims_notSameNumel",
@@ -557,16 +557,16 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
   emxInit_real_T(&st, &f_y, 2, &n_emlrtRTEI, true);
   i1 = f_y->size[0] * f_y->size[1];
   f_y->size[0] = L;
-  f_y->size[1] = 66049;
+  f_y->size[1] = 4225;
   emxEnsureCapacity_real_T(sp, f_y, i1, &k_emlrtRTEI);
-  maxdimlen = L * 66049;
+  maxdimlen = L * 4225;
   for (i1 = 0; i1 < maxdimlen; i1++) {
     f_y->data[i1] = rtNaN;
   }
   emxInit_real_T(sp, &b_z, 2, &o_emlrtRTEI, true);
   i1 = b_z->size[0] * b_z->size[1];
   b_z->size[0] = L;
-  b_z->size[1] = 66049;
+  b_z->size[1] = 4225;
   emxEnsureCapacity_real_T(sp, b_z, i1, &l_emlrtRTEI);
   for (i1 = 0; i1 < maxdimlen; i1++) {
     b_z->data[i1] = rtNaN;
@@ -575,18 +575,18 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
   nx = (xM > 1);
   /*  used for linear indexing */
   /*  used for linear indexing */
-  xM = (int16_T)C->size[0] * 19;
+  xM = (int8_T)C->size[0] * 19;
   /*  used for linear indexing */
   /*  used for linear indexing */
   emxInit_real_T(sp, &g_y, 2, &p_emlrtRTEI, true);
-  for (n = 0; n < 66049; n++) {
+  for (n = 0; n < 4225; n++) {
     for (l = 0; l < L; l++) {
       i1 = n * L;
       i2 = (l + i1 * nx) + 1;
       if (i2 > i) {
         emlrtDynamicBoundsCheckR2012b(i2, 1, i, &emlrtBCI, (emlrtCTX)sp);
       }
-      xln = x->data[i2 - 1];
+      xln = x_data[i2 - 1];
       /*  x(l,n) or x(l,1) as appropriate */
       if ((!muDoubleScalarIsNaN(xln)) && (!muDoubleScalarIsNaN(X[0])) &&
           (!(xln < X[0])) && (!(xln > X[19]))) {
@@ -598,22 +598,22 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
          * they are Inf. */
         b_i = 1;
         /*  Result will be >= 1 always */
-        szx_idx_1 = 20;
+        sz_idx_1 = 20;
         /*  Result will be <= M always */
-        while (b_i < szx_idx_1) {
+        while (b_i < sz_idx_1) {
           maxdimlen =
-              (int32_T)muDoubleScalarFloor((real_T)(b_i + szx_idx_1) / 2.0);
+              (int32_T)muDoubleScalarFloor((real_T)(b_i + sz_idx_1) / 2.0);
           if (X[maxdimlen - 1] < xln) {
             /*  [X(j,n) or X(j,1) as appropriate]  < xln */
             b_i = maxdimlen + 1;
           } else {
-            szx_idx_1 = maxdimlen;
+            sz_idx_1 = maxdimlen;
           }
           if (*emlrtBreakCheckR2012bFlagVar != 0) {
             emlrtBreakCheckR2012b((emlrtCTX)sp);
           }
         }
-        szx_idx_1 = (l + i1) + 1;
+        sz_idx_1 = (l + i1) + 1;
         if (b_i == 1) {
           /*  Note: X(nX + 1) == xln   is guaranteed */
           if (muDoubleScalarIsNaN(d)) {
@@ -644,7 +644,7 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
           st.site = &b_emlrtRSI;
           p = prod(&st, g_y);
           /*  Build integer multiplying the coefficient */
-          i1 = C->size[0] * 19 * 257 * 257;
+          i1 = C->size[0] * 19 * 65 * 65;
           a = ((real_T)O - d) + (real_T)(n * xM);
           xln = (int32_T)muDoubleScalarFloor(a);
           if (a != xln) {
@@ -654,14 +654,14 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
             emlrtDynamicBoundsCheckR2012b((int32_T)a, 1, i1, &d_emlrtBCI,
                                           (emlrtCTX)sp);
           }
-          i1 = f_y->size[0] * 66049;
-          if (szx_idx_1 > i1) {
-            emlrtDynamicBoundsCheckR2012b(szx_idx_1, 1, i1, &e_emlrtBCI,
+          i1 = f_y->size[0] * 4225;
+          if (sz_idx_1 > i1) {
+            emlrtDynamicBoundsCheckR2012b(sz_idx_1, 1, i1, &e_emlrtBCI,
                                           (emlrtCTX)sp);
           }
-          f_y->data[szx_idx_1 - 1] = C->data[(int32_T)a - 1] * p;
+          f_y->data[sz_idx_1 - 1] = C->data[(int32_T)a - 1] * p;
           /*  y(l,n) = C(O - d, i, n) * p; */
-          i1 = D->size[0] * 19 * 257 * 257;
+          i1 = D->size[0] * 19 * 65 * 65;
           if (a != xln) {
             emlrtIntegerCheckR2012b(a, &b_emlrtDCI, (emlrtCTX)sp);
           }
@@ -669,12 +669,12 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
             emlrtDynamicBoundsCheckR2012b((int32_T)a, 1, i1, &f_emlrtBCI,
                                           (emlrtCTX)sp);
           }
-          i1 = b_z->size[0] * 66049;
-          if (szx_idx_1 > i1) {
-            emlrtDynamicBoundsCheckR2012b(szx_idx_1, 1, i1, &g_emlrtBCI,
+          i1 = b_z->size[0] * 4225;
+          if (sz_idx_1 > i1) {
+            emlrtDynamicBoundsCheckR2012b(sz_idx_1, 1, i1, &g_emlrtBCI,
                                           (emlrtCTX)sp);
           }
-          b_z->data[szx_idx_1 - 1] = D->data[(int32_T)a - 1] * p;
+          b_z->data[sz_idx_1 - 1] = D->data[(int32_T)a - 1] * p;
         } else {
           /*  Evaluate this piece of the polynomial (see ppval.m) */
           t = xln - X[b_i - 2];
@@ -684,18 +684,18 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
            */
           /*  subtract another 1 for indexing.  */
           b_i = (b_i - 2) * O + n * xM;
-          i1 = f_y->size[0] * 66049;
-          if (szx_idx_1 > i1) {
-            emlrtDynamicBoundsCheckR2012b(szx_idx_1, 1, i1, &b_emlrtBCI,
+          i1 = f_y->size[0] * 4225;
+          if (sz_idx_1 > i1) {
+            emlrtDynamicBoundsCheckR2012b(sz_idx_1, 1, i1, &b_emlrtBCI,
                                           (emlrtCTX)sp);
           }
-          f_y->data[szx_idx_1 - 1] = 0.0;
-          i1 = b_z->size[0] * 66049;
-          if (szx_idx_1 > i1) {
-            emlrtDynamicBoundsCheckR2012b(szx_idx_1, 1, i1, &c_emlrtBCI,
+          f_y->data[sz_idx_1 - 1] = 0.0;
+          i1 = b_z->size[0] * 4225;
+          if (sz_idx_1 > i1) {
+            emlrtDynamicBoundsCheckR2012b(sz_idx_1, 1, i1, &c_emlrtBCI,
                                           (emlrtCTX)sp);
           }
-          b_z->data[szx_idx_1 - 1] = 0.0;
+          b_z->data[sz_idx_1 - 1] = 0.0;
           a = (real_T)O - d;
           i1 = (int32_T)a;
           emlrtForLoopVectorCheckR2021a(1.0, 1.0, a, mxDOUBLE_CLASS, (int32_T)a,
@@ -736,42 +736,42 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
             st.site = &c_emlrtRSI;
             p = prod(&st, g_y);
             /*  Build integer multiplying the coefficient */
-            i2 = f_y->size[0] * 66049;
-            if (szx_idx_1 > i2) {
-              emlrtDynamicBoundsCheckR2012b(szx_idx_1, 1, i2, &h_emlrtBCI,
+            i2 = f_y->size[0] * 4225;
+            if (sz_idx_1 > i2) {
+              emlrtDynamicBoundsCheckR2012b(sz_idx_1, 1, i2, &h_emlrtBCI,
                                             (emlrtCTX)sp);
             }
-            i2 = C->size[0] * 19 * 257 * 257;
+            i2 = C->size[0] * 19 * 65 * 65;
             maxdimlen = (int32_T)(((uint32_T)o + b_i) + 1U);
             if ((maxdimlen < 1) || (maxdimlen > i2)) {
               emlrtDynamicBoundsCheckR2012b(maxdimlen, 1, i2, &i_emlrtBCI,
                                             (emlrtCTX)sp);
             }
-            i2 = f_y->size[0] * 66049;
-            if (szx_idx_1 > i2) {
-              emlrtDynamicBoundsCheckR2012b(szx_idx_1, 1, i2, &j_emlrtBCI,
+            i2 = f_y->size[0] * 4225;
+            if (sz_idx_1 > i2) {
+              emlrtDynamicBoundsCheckR2012b(sz_idx_1, 1, i2, &j_emlrtBCI,
                                             (emlrtCTX)sp);
             }
-            f_y->data[szx_idx_1 - 1] =
-                t * f_y->data[szx_idx_1 - 1] + C->data[maxdimlen - 1] * p;
+            f_y->data[sz_idx_1 - 1] =
+                t * f_y->data[sz_idx_1 - 1] + C->data[maxdimlen - 1] * p;
             /*  y(l,n) = t * y(l,n) + C(o,i+1,n+1) * p; */
-            i2 = b_z->size[0] * 66049;
-            if (szx_idx_1 > i2) {
-              emlrtDynamicBoundsCheckR2012b(szx_idx_1, 1, i2, &k_emlrtBCI,
+            i2 = b_z->size[0] * 4225;
+            if (sz_idx_1 > i2) {
+              emlrtDynamicBoundsCheckR2012b(sz_idx_1, 1, i2, &k_emlrtBCI,
                                             (emlrtCTX)sp);
             }
-            i2 = D->size[0] * 19 * 257 * 257;
+            i2 = D->size[0] * 19 * 65 * 65;
             if (maxdimlen > i2) {
               emlrtDynamicBoundsCheckR2012b(maxdimlen, 1, i2, &l_emlrtBCI,
                                             (emlrtCTX)sp);
             }
-            i2 = b_z->size[0] * 66049;
-            if (szx_idx_1 > i2) {
-              emlrtDynamicBoundsCheckR2012b(szx_idx_1, 1, i2, &m_emlrtBCI,
+            i2 = b_z->size[0] * 4225;
+            if (sz_idx_1 > i2) {
+              emlrtDynamicBoundsCheckR2012b(sz_idx_1, 1, i2, &m_emlrtBCI,
                                             (emlrtCTX)sp);
             }
-            b_z->data[szx_idx_1 - 1] =
-                t * b_z->data[szx_idx_1 - 1] + D->data[maxdimlen - 1] * p;
+            b_z->data[sz_idx_1 - 1] =
+                t * b_z->data[sz_idx_1 - 1] + D->data[maxdimlen - 1] * p;
             if (*emlrtBreakCheckR2012bFlagVar != 0) {
               emlrtBreakCheckR2012b((emlrtCTX)sp);
             }
@@ -795,16 +795,16 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
   st.site = &d_emlrtRSI;
   b_st.site = &p_emlrtRSI;
   assertValidSizeArg(&b_st, szy);
-  i = L * 257 * 257;
-  if (i != f_y->size[0] * 66049) {
+  i = L * 65 * 65;
+  if (i != f_y->size[0] * 4225) {
     emlrtErrorWithMessageIdR2018a(
         &st, &emlrtRTEI, "Coder:MATLAB:getReshapeDims_notSameNumel",
         "Coder:MATLAB:getReshapeDims_notSameNumel", 0);
   }
   h_y = *f_y;
   num_tmp[0] = L;
-  num_tmp[1] = 257;
-  num_tmp[2] = 257;
+  num_tmp[1] = 65;
+  num_tmp[2] = 65;
   num_tmp[3] = 1;
   h_y.size = &num_tmp[0];
   h_y.numDimensions = 4;
@@ -814,15 +814,15 @@ void ppc_val2(const emlrtStack *sp, const real_T X[20],
   b_st.site = &p_emlrtRSI;
   assertValidSizeArg(&b_st, szy);
   emxFree_real_T(&f_y);
-  if (i != b_z->size[0] * 66049) {
+  if (i != b_z->size[0] * 4225) {
     emlrtErrorWithMessageIdR2018a(
         &st, &emlrtRTEI, "Coder:MATLAB:getReshapeDims_notSameNumel",
         "Coder:MATLAB:getReshapeDims_notSameNumel", 0);
   }
   h_y = *b_z;
   b_num_tmp[0] = L;
-  b_num_tmp[1] = 257;
-  b_num_tmp[2] = 257;
+  b_num_tmp[1] = 65;
+  b_num_tmp[2] = 65;
   b_num_tmp[3] = 1;
   h_y.size = &b_num_tmp[0];
   h_y.numDimensions = 4;

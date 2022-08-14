@@ -137,14 +137,16 @@ OPTS.INTERPFN = @ppc_pchip;
 OPTS.WRAP = [1;1];
 
 %% omega_hel
+fprintf('omega_hel');
 OPTS.data_cube=0;
-OPTS.ITER = 100;
+OPTS.ITER = 10;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
 OPTS.PCG = 0;
-
+OPTS.CHOLESKY = 0;
 OPTS.LM = 0;
-OPTS.TK = 1e-5;
+OPTS.H_SIM = 0;
+OPTS.TK = 1e-8;
 %OPTS.TK = 0;
 
 % OPTS.TK = 0;
@@ -155,11 +157,12 @@ OPTS.MODE = 1;
 [z_hel,s_hel,t_hel, ~,d_hel] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
 
 %% omega_hel_Tz
+fprintf('omega_hel_Tz');
 OPTS.data_cube=0;
-OPTS.ITER = 100;
+OPTS.ITER = 10;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
-
+OPTS.CHOLESKY = 0;
 OPTS.LM = 0;
 OPTS.TK = 1e-9;
 
@@ -168,11 +171,12 @@ OPTS.MODE = 9;
 [z_helTz,s_helTz,t_helTz, ~,d_helTz] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
 
 %% omega_hel_Sz
+fprintf('omega_hel_Sz');
 OPTS.data_cube=0;
-OPTS.ITER = 100;
+OPTS.ITER = 10;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
-
+OPTS.CHOLESKY = 0;
 OPTS.LM = 0;
 OPTS.TK = 1e-10;
 
@@ -181,28 +185,34 @@ OPTS.MODE = 10;
 [z_helSz,s_helSz,t_helSz, ~,d_helSz] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
            
 %% omega_s
+fprintf('omega_s');
 OPTS.MODE = 2;
 OPTS.STRAT = 1;
 OPTS.SHEAR = 1;
 % OPTS.LM = 1e-3;
 OPTS.TK = 0;
-OPTS.H_SIM = 1;
+OPTS.H_SIM = 0;
 % OPTS.LM = 0;
 % OPTS.TK = 1e-8;
 OPTS.TOL_LSQR_REL = 1e-6;
+OPTS.CHOLESKY = 0;
 
-OPTS.ITER = 100;
+OPTS.ITER = 10;
 
 [zns_s,sns_s,tns_s, ~, d_s] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
 
 %% omega_s2xy
+fprintf('omega_s2xy');
 OPTS.MODE = 6;
 OPTS.STRAT = 1;
 OPTS.SHEAR = 1;
-OPTS.ITER = 100;
+OPTS.ITER = 10;
 OPTS.H_SIM = 0;
+OPTS.CHOLESKY = 0;
+
 
 OPTS.LM = 0;
+% OPTS.TK = 1e-9;
 OPTS.TK = 1e-9;
 
 % OPTS.TK = 0;
@@ -211,12 +221,14 @@ OPTS.TK = 1e-9;
 [zns_s2xy,sns_s2xy,tns_s2xy, ~, d_s2xy] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
 
 %% omega_hel_s2xy 
-OPTS.ITER = 100;
+fprintf('omega_hel_s2xy');
+
+OPTS.ITER = 15;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
-
+OPTS.CHOLESKY = 0;
 OPTS.LM = 0;
-OPTS.TK = 1e-5;
+OPTS.TK = 1e-8;
 OPTS.H_SIM = 0;
 
 % OPTS.TK = 0;

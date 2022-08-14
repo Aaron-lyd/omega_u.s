@@ -1,4 +1,4 @@
-function [dz, ehelSz, N] = omega_hel_Sz_matsolve(z, Z, SppZ, TppZ, Sz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS)
+function [dz, ehelSz, N] = omega_hel_Sz_matsolve(z, Z, SppZ, TppZ, Sz, Szz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS)
 
 %%
 STRAT = OPTS.STRAT;
@@ -128,6 +128,25 @@ val(5,:) = -sum(val(1:4,:), 1); % Note - sign
 
 % assert(sum(val(good) == 0) == 0, 'found %d zeros in val(good)', sum(val(good) == 0))
 
+
+% S_zz terms
+% im = u .* sx .* RAX; ip = ip1(im);
+% jm = v .* sy .* RAY; jp = jp1(jm);
+% val2 = [jm(m)'; im(m)'; ip(m)'; jp(m)'; zeros(1,N)] ./ (4 * sqrtAREA(m)') .* Szz(m)';
+% val2(~good) = 0; % Ignore invalid connections
+% val2(5,:) = sum(val2(1:4,:), 1); % note + sign
+% val = val + val2;
+
+im = u .* sx .* RAX; ip = ip1(im);
+jm = v .* sy .* RAY; jp = jp1(jm);
+val2 = [jm(m)'; im(m)'; ip(m)'; jp(m)'; zeros(1,N)] ./ (2 * sqrtAREA(m)') .* Szz(m)';
+val2(~good) = 0; % Ignore invalid connections
+val2(5,:) = sum(val2(1:4,:), 1); % note + sign
+val2(1:4,:) = 0;
+val = val + val2;
+
+
+
 if SHEAR
     % Do (u',v') . s terms
     im = uz .* sx .* RAX; ip = ip1(im);
@@ -150,17 +169,39 @@ if STRAT
     val = val + val2;
 end
 
-mat = sparse(r(good), c(good), val(good), N+1, N);
+mat = sparse(r(good), c(good), val(good), N, N);
+
+% pin
+mr = remap(i0,j0);
+pinval = 1e-3*rms(val(:));
 
 %% New pinning
-mr = remap(i0,j0);
-mat(N+1,mr) = 100* rms(val(good));
-rhs = zeros(N+1,1);
-rhs(1:N) = -ehelSz(m) .* sqrtAREA(m);
+CHOLESKY = OPTS.CHOLESKY;
+if CHOLESKY
+    mat(N+1,mr) = 100* rms(val(good));
+    rhs = zeros(N+1,1);
+    rhs(1:N) = -ehelSz(m) .* sqrtAREA(m);
 
-% Normal Equations
-rhs = mat' * rhs;
-mat = mat' * mat;
+    % Normal Equations
+    rhs = mat' * rhs;
+    mat = mat' * mat;
+else
+    rhs = zeros(N,1);
+    rhs(1:N) = -ehelSz(m) .* sqrtAREA(m);
+    % Normal Equations
+    rhs = mat' * rhs;
+    mat = mat' * mat;
+end
+
+%% New pinning
+% mr = remap(i0,j0);
+% mat(N+1,mr) = 100* rms(val(good));
+% rhs = zeros(N+1,1);
+% rhs(1:N) = -ehelSz(m) .* sqrtAREA(m);
+% 
+% % Normal Equations
+% rhs = mat' * rhs;
+% mat = mat' * mat;
 
 %% Levenberg-Marquardt
 if LM > 0
@@ -189,7 +230,11 @@ if TK > 0
 end
 
 %% solution
-sol = mat \ rhs;
+if CHOLESKY
+    sol = mat \ rhs;
+else
+    sol = nonzero_mean_brent_lsqlin(mat, rhs, mr, pinval);
+end
 
 dz = zeros(ni, nj);
 dz(m) = sol;

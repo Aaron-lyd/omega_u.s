@@ -1,5 +1,5 @@
 %% load data
-ni = 2^8+1; nj = ni; nk = 20; wall = 1; helicity = 5; U_M = 0;
+ni = 2^6+1; nj = ni; nk = 20; wall = 1; helicity = 5; U_M = 0;
 [S, T, P,U_M,V_M, ~, phii] = datacube(ni,nj,nk,helicity,wall,U_M,1,0);
 
 % interpolate salinity and temperature on the neutral density surface
@@ -152,17 +152,102 @@ elseif v_mode ==3 % irrotational Gaussian (on checkerboard)
 end
 
 OPTS_DC.PCG = 0;
-OPTS_DC.ITER = 500;
-OPTS_DC.SHEAR = 0;
-OPTS_DC.STRAT = 0;
+OPTS_DC.ITER = 50;
+OPTS_DC.SHEAR = 1;
+OPTS_DC.STRAT = 1;
+OPTS_DC.CHOLESKY = 0;
+OPTS_DC.H_SIM = 0;
 
 OPTS_DC.LM = 0;
 % OPTS_DC.TK = 1e-5;
-OPTS_DC.TK = 0;
+OPTS_DC.TK = 1e-8;
 
 OPTS_DC.MODE = 1; %omega_u.s surface
 
 [z_hel_dc,s_hel_dc,t_hel_dc, ~,d_hel_dc] = omega_hel_surface(S, T, P, U_f, V_f, zns_dc, OPTS_DC);
+
+%% omega_s
+OPTS_DC.MODE = 2;
+OPTS_DC.STRAT = 1;
+OPTS.SHEAR = 1;
+% OPTS.LM = 1e-3;
+OPTS_DC.TK = 0;
+OPTS_DC.H_SIM = 0;
+% OPTS.LM = 0;
+% OPTS.TK = 1e-8;
+OPTS_DC.TOL_LSQR_REL = 1e-6;
+OPTS_DC.CHOLESKY = 0;
+
+OPTS_DC.ITER = 100;
+
+[zns_s_dc,sns_s_dc,tns_s_dc, ~, d_s_dc] = omega_hel_surface(S, T, P, U_f, V_f, zns_dc, OPTS_DC);
+
+%% omega_s2xy
+OPTS.MODE = 6;
+OPTS.STRAT = 1;
+OPTS.SHEAR = 1;
+OPTS.ITER = 20;
+OPTS.H_SIM = 0;
+OPTS.CHOLESKY = 0;
+
+
+OPTS.LM = 0;
+% OPTS.TK = 1e-9;
+OPTS.TK = 1e-9;
+
+% OPTS.TK = 0;
+% OPTS.LM = 1;
+
+[zns_s2xy_dc,sns_s2xy_dc,tns_s2xy_dc, ~, d_s2xy_dc] = omega_hel_surface(S, T, P, U_f, V_f, zns_dc, OPTS_DC);
+
+%% omega_hel_s2xy 
+OPTS.ITER = 100;
+OPTS.SHEAR = 1;
+OPTS.STRAT = 1;
+OPTS.CHOLESKY = 0;
+
+OPTS.LM = 0;
+OPTS.TK = 1e-8;
+OPTS.H_SIM = 0;
+
+% OPTS.TK = 0;
+% OPTS.LM = 1;
+
+% weight of ehelu and ehelv
+OPTS.s2xyW = 1;
+OPTS.FIGS_SHOW = 0;
+
+OPTS.MODE = 8;
+
+[z_hels2xy_dc,s_hels2xy_dc,t_hels2xy_dc, ~,d_hels2xy_dc] = omega_hel_surface(S, T, P, U_f, V_f, zns_dc, OPTS_DC);
+
+%% omega_hel_Tz
+OPTS.data_cube=0;
+OPTS.ITER = 100;
+OPTS.SHEAR = 1;
+OPTS.STRAT = 1;
+OPTS.CHOLESKY = 0;
+
+OPTS.LM = 0;
+OPTS.TK = 1e-9;
+
+OPTS.MODE = 9;
+
+[z_helTz_dc,s_helTz_dc,t_helTz_dc, ~,d_helTz_dc] = omega_hel_surface(S, T, P, U_f, V_f, zns_dc, OPTS_DC);
+
+%% omega_hel_Sz
+OPTS.data_cube=0;
+OPTS.ITER = 100;
+OPTS.SHEAR = 1;
+OPTS.STRAT = 1;
+OPTS.CHOLESKY = 0;
+
+OPTS.LM = 0;
+OPTS.TK = 1e-10;
+
+OPTS.MODE = 10;
+
+[z_helSz_dc,s_helSz_dc,t_helSz_dc, ~,d_helSz_dc] = omega_hel_surface(S, T, P, U_f, V_f, zns_dc, OPTS_DC);
 
 %% s, e^hel and flux
 % prepare for the grid information

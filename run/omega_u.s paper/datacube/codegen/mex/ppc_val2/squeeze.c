@@ -43,7 +43,7 @@ void squeeze(const emlrtStack *sp, const emxArray_real_T *a, emxArray_real_T *b)
   emlrtStack st;
   int32_T k;
   int32_T nx;
-  int16_T sqsz[4];
+  int8_T sqsz[4];
   st.prev = sp;
   st.tls = sp->tls;
   sqsz[0] = 1;
@@ -54,19 +54,19 @@ void squeeze(const emlrtStack *sp, const emxArray_real_T *a, emxArray_real_T *b)
     k--;
   }
   if ((k == 2) && (a->size[0] == 1)) {
-    sqsz[1] = (int16_T)a->size[1];
+    sqsz[1] = (int8_T)a->size[1];
   } else {
     k = 0;
     if (a->size[0] != 1) {
       k = 1;
-      sqsz[0] = (int16_T)a->size[0];
+      sqsz[0] = (int8_T)a->size[0];
     }
     if (a->size[1] != 1) {
       k++;
-      sqsz[k - 1] = (int16_T)a->size[1];
+      sqsz[k - 1] = (int8_T)a->size[1];
     }
     if (a->size[2] != 1) {
-      sqsz[k] = (int16_T)a->size[2];
+      sqsz[k] = (int8_T)a->size[2];
     }
   }
   st.site = &q_emlrtRSI;

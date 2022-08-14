@@ -151,23 +151,35 @@ if STRAT
     val = val + val2;
 end
 
-mat = sparse(r(good), c(good), val(good), N+1, N);
+mat = sparse(r(good), c(good), val(good), N, N);
+
+% pin
+mr = remap(i0,j0);
+pinval = 1e-3*rms(val(:));
 
 %% New pinning
-mr = remap(i0,j0);
-mat(N+1,mr) = 100* rms(val(good));
-rhs = zeros(N+1,1);
-rhs(1:N) = -ehel(m) .* sqrtAREA(m);
+CHOLESKY = OPTS.CHOLESKY;
+if CHOLESKY
+    mat(N+1,mr) = 100* rms(val(good));
+    rhs = zeros(N+1,1);
+    rhs(1:N) = -ehel(m) .* sqrtAREA(m);
 
-% Normal Equations
-rhs_N = mat' * rhs;
-mat_N = mat' * mat;
+    % Normal Equations
+    rhs = mat' * rhs;
+    mat = mat' * mat;
+else
+    rhs = zeros(N,1);
+    rhs(1:N) = -ehel(m) .* sqrtAREA(m);
+    % Normal Equations
+    rhs = mat' * rhs;
+    mat = mat' * mat;
+end
 
 % condition_numer = condest(mat);
 
-[eVec, eVal] = eig(full(mat));
-diag_eval = diag(eVal);
-min(diag_eval)
+% [eVec, eVal] = eig(full(mat));
+% diag_eval = diag(eVal);
+% min(diag_eval)
 % 
 % [eVal_sort,ind] = sort(diag(eVal));
 % eVecs = eVec(:,ind);
@@ -183,9 +195,9 @@ min(diag_eval)
 
 %% Levenberg-Marquardt
 if LM > 0
-    mat_rms = rms(mat_N(mat_N ~= 0));
+    mat_rms = rms(mat(mat ~= 0));
     assert(isfinite(mat_rms), 'matrix has some NaN''s; cannot proceed.');
-    mat_N = mat_N + (LM * mat_rms) * speye(N);
+    mat = mat + (LM * mat_rms) * speye(N);
 end
 
 %% TK
@@ -200,21 +212,22 @@ if TK > 0
     % uniform grid of unity
     val = repelem([-1; 1], 1, num_eq);
     tik = sparse(r, c, val, num_eq, N);
-    
+
     % Apply regularization.  Note tik' * tik is a Laplacian.  Could build that directly...
-    mat_N = mat_N + TK * (tik' * tik);
+    mat = mat + TK * (tik' * tik);
     % Note that adding Tikhonov makes pinning not quite perfect.
     % In one test, the solution drifted 6.36cm at ref cast...  current solution is PIN_RIGID
 end
 
 %% solution
-PCG = OPTS.PCG;
-if PCG
-    alpha = max(sum(abs(mat_N),2)./diag(mat_N))-2;
-    L = ichol(mat_N, struct('type','ict','droptol',1e-3,'diagcomp',alpha));
-    sol = pcg(mat_N, rhs_N, 1e-7, 200, L, L');
+% PCG = OPTS.PCG;
+% alpha = max(sum(abs(mat_N),2)./diag(mat_N))-2;
+% L = ichol(mat_N, struct('type','ict','droptol',1e-3,'diagcomp',alpha));
+% sol = pcg(mat_N, rhs_N, 1e-7, 200, L, L');
+if CHOLESKY
+    sol = mat \ rhs;
 else
-    sol = mat_N \ rhs_N;
+    sol = nonzero_mean_brent_lsqlin(mat, rhs, mr, pinval);
 end
 
 dz = zeros(ni, nj);

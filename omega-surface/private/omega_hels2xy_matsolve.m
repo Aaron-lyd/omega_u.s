@@ -182,7 +182,7 @@ sym = sy(m);
 s2x = sxm .* sxm .* sqrtAREAXm;
 s2y = sym .* sym .* sqrtAREAYm;
 
-rhs_s2xy = -[s2x; s2y;0];
+rhs_s2xy = -[s2x; s2y];
 neqx = length(s2x);
 neqy = length(s2y);
 
@@ -237,11 +237,29 @@ mr = remap(i0,j0);
 ww = OPTS.s2xyW;
 mat = [mat_hel; ww*mat_s2xy];
 rhs = [rhs_hel; ww*rhs_s2xy];
-mat(N+neq+1,mr) = 100* rf;
 
-% Normal Equations
-rhs = mat' * rhs;
-mat = mat' * mat;
+
+% % Normal Equations
+% rhs = mat' * rhs;
+% mat = mat' * mat;
+
+pinval = 1e-3*rms(val(good_1p5));
+
+%% New pinning
+CHOLESKY = OPTS.CHOLESKY;
+if CHOLESKY
+    mat(N+neq+1,mr) = 100* rf;
+    nrhs = length(rhs);
+    rhs(nrhs+1) = 0;
+
+    % Normal Equations
+    rhs = mat' * rhs;
+    mat = mat' * mat;
+else
+    % Normal Equations
+    rhs = mat' * rhs;
+    mat = mat' * mat;
+end
 
 %% Levenberg-Marquardt
 if LM > 0
@@ -270,7 +288,11 @@ if TK > 0
 end
 
 %% solution
-sol = mat \ rhs;
+if CHOLESKY
+    sol = mat \ rhs;
+else
+    sol = nonzero_mean_brent_lsqlin(mat, rhs, mr, pinval);
+end
 
 dz = zeros(ni, nj);
 dz(m) = sol;
