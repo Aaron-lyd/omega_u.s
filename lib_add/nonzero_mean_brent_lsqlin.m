@@ -10,10 +10,12 @@ function sol = nonzero_mean_brent_lsqlin(mat, rhs, mr, pinval)
 opts = optimoptions('lsqlin');
 opts.Display = 'off';
 % opts.StepTolerance = 1e-15;
-opts.StepTolerance = 1e-12;
 % opts.OptimalityTolerance = 1e-15;
-opts.OptimalityTolerance = 2e-14;
 % opts.ConstraintTolerance = 1e-15;
+
+% Aaron OPTS
+opts.StepTolerance = 1e-12;
+opts.OptimalityTolerance = 2e-14;
 opts.ConstraintTolerance = 1e-8;
 
 N = size(mat, 2);

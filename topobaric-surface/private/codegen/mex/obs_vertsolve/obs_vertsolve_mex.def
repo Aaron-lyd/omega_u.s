@@ -1,0 +1,12 @@
+LIBRARY obs_vertsolve_mex.mexw64
+EXPORTS
+mexFunction
+mexfilerequiredapiversion
+emlrtMexFcnProperties
+obs_vertsolve
+obs_vertsolve_initialize
+obs_vertsolve_terminate
+obs_vertsolve_atexit
+emxInit_real_T
+emxEnsureCapacity_real_T
+emxFree_real_T

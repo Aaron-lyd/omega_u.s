@@ -25,50 +25,37 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                      real_T tolp, const emxArray_real_T *phi)
 {
   emxArray_real_T *Pn;
-  real_T Sppc_data[392];
-  real_T Sppcn_data[392];
-  real_T Tppc_data[392];
-  real_T Tppcn_data[392];
-  real_T b_d;
+  const real_T *BotK_data;
+  const real_T *P_data;
+  const real_T *Sppc_data;
+  const real_T *Tppc_data;
+  const real_T *phi_data;
   real_T b_p;
   real_T b_s;
   real_T b_t;
-  real_T c;
   real_T d;
-  real_T dxm;
-  real_T dxp;
-  real_T e;
-  real_T fb;
-  real_T fc;
-  real_T lb;
-  real_T m;
-  real_T rn;
-  real_T s1o2;
-  real_T tol;
-  real_T ub;
-  int32_T Sppc_size[2];
+  real_T *Pn_data;
+  real_T *p_data;
+  real_T *s_data;
+  real_T *t_data;
   int32_T Sppcn_size[2];
-  int32_T Sppc_idx_0;
-  int32_T Sppc_idx_1;
-  int32_T Tppc_idx_0;
-  int32_T Tppc_idx_1;
-  int32_T b_loop_ub;
-  int32_T c_loop_ub;
-  int32_T exitg1;
   int32_T i;
   int32_T i1;
   int32_T i2;
-  int32_T loop_ub;
   int32_T n;
   boolean_T Pmat;
-  boolean_T fapos;
-  boolean_T fbpos;
-  boolean_T guard1 = false;
+  phi_data = phi->data;
+  p_data = p->data;
+  t_data = t->data;
+  s_data = s->data;
+  BotK_data = BotK->data;
+  P_data = P->data;
+  Tppc_data = Tppc->data;
+  Sppc_data = Sppc->data;
   emlrtHeapReferenceStackEnterFcnR2012b(emlrtRootTLSGlobal);
   /* OMEGA_VERTSOLVE  Root finding of a new surface with a specified a density
    */
   /*                  difference from the current surface */
-  /*  */
   /*  */
   /*  [s, t, p] = omega_vertsolve(Sppc, Tppc, P, BotK, s0, t0, p0, tolp, phi) */
   /*  determines pressures p that satisfy */
@@ -81,7 +68,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
   /*  The function eos.m determines either the in-situ density or the specific
    */
   /*  volume. */
-  /*  */
   /*  */
   /*  --- Input */
   /*  Sppc [O, K-1, N]: coefficients for piecewise polynomial for practical */
@@ -113,14 +99,12 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
   /*  Note: BotK should be given by */
   /*            BotK = squeeze(sum(isfinite(S), 1)); */
   /*  */
-  /*  */
   /*  --- Output */
   /*  p [same as input p]: pressure or depth of the updated surface */
   /*  s [same as input p]: practical / Absolute salinity of the updated surface
    */
   /*  t [same as input p]: potential / Conservative temperature of the updated
    * surface */
-  /*  */
   /*  */
   /*  --- Units */
   /*  The units of s, t, p, , T, P, tolp, and phi are determined by the */
@@ -133,63 +117,82 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
   Pmat = (((P->size[0] != 1) && (P->size[1] != 1)) || (P->size[2] != 1));
   /*  Loop over each water column */
   i = p->size[0] * p->size[1];
-  emxInit_real_T(&Pn, 1, true);
+  emxInit_real_T(&Pn, 1);
   for (n = 0; n < i; n++) {
-    d = phi->data[n];
-    if ((!muDoubleScalarIsNaN(phi->data[n])) && (BotK->data[n] > 1.0)) {
+    d = phi_data[n];
+    if ((!muDoubleScalarIsNaN(phi_data[n])) && (BotK_data[n] > 1.0)) {
+      real_T Sppcn_data[392];
+      real_T Tppcn_data[392];
+      real_T dxm;
+      real_T dxp;
+      real_T fb;
+      real_T lb;
+      real_T m;
+      real_T rn;
+      real_T s1o2;
+      real_T tol;
+      real_T ub;
+      int32_T Sppc_idx_0;
+      int32_T Sppc_idx_1;
+      int32_T Tppcn_size_idx_0;
+      int32_T b_loop_ub;
+      int32_T exitg1;
+      int32_T loop_ub;
+      boolean_T fapos;
       /*  Select this water column */
-      if (1.0 > BotK->data[n] - 1.0) {
+      if (BotK_data[n] - 1.0 < 1.0) {
         loop_ub = 0;
       } else {
-        loop_ub = (int32_T)(BotK->data[n] - 1.0);
+        loop_ub = (int32_T)(BotK_data[n] - 1.0);
       }
-      b_loop_ub = Sppc->size[0];
       Sppc_idx_0 = Sppc->size[0];
       Sppc_idx_1 = Sppc->size[1];
       Sppcn_size[0] = Sppc->size[0];
       Sppcn_size[1] = loop_ub;
       for (i1 = 0; i1 < loop_ub; i1++) {
+        b_loop_ub = Sppc->size[0];
         for (i2 = 0; i2 < b_loop_ub; i2++) {
           Sppcn_data[i2 + Sppcn_size[0] * i1] =
-              Sppc->data[(i2 + Sppc_idx_0 * i1) + Sppc_idx_0 * Sppc_idx_1 * n];
+              Sppc_data[(i2 + Sppc_idx_0 * i1) + Sppc_idx_0 * Sppc_idx_1 * n];
         }
       }
-      if (1.0 > BotK->data[n] - 1.0) {
-        b_loop_ub = 0;
+      if (BotK_data[n] - 1.0 < 1.0) {
+        loop_ub = 0;
       } else {
-        b_loop_ub = (int32_T)(BotK->data[n] - 1.0);
+        loop_ub = (int32_T)(BotK_data[n] - 1.0);
       }
-      c_loop_ub = Tppc->size[0];
-      Tppc_idx_0 = Tppc->size[0];
-      Tppc_idx_1 = Tppc->size[1];
-      Sppc_idx_1 = Tppc->size[0];
-      for (i1 = 0; i1 < b_loop_ub; i1++) {
-        for (i2 = 0; i2 < c_loop_ub; i2++) {
-          Tppcn_data[i2 + Sppc_idx_1 * i1] =
-              Tppc->data[(i2 + Tppc_idx_0 * i1) + Tppc_idx_0 * Tppc_idx_1 * n];
+      Sppc_idx_0 = Tppc->size[0];
+      Sppc_idx_1 = Tppc->size[1];
+      Tppcn_size_idx_0 = Tppc->size[0];
+      for (i1 = 0; i1 < loop_ub; i1++) {
+        b_loop_ub = Tppc->size[0];
+        for (i2 = 0; i2 < b_loop_ub; i2++) {
+          Tppcn_data[i2 + Tppcn_size_idx_0 * i1] =
+              Tppc_data[(i2 + Sppc_idx_0 * i1) + Sppc_idx_0 * Sppc_idx_1 * n];
         }
       }
       if (Pmat) {
-        Sppc_idx_1 = P->size[0];
-        Sppc_idx_0 = (int32_T)BotK->data[n];
+        loop_ub = P->size[0];
+        Sppc_idx_0 = (int32_T)BotK_data[n];
         i1 = Pn->size[0];
         Pn->size[0] = Sppc_idx_0;
         emxEnsureCapacity_real_T(Pn, i1);
+        Pn_data = Pn->data;
         for (i1 = 0; i1 < Sppc_idx_0; i1++) {
-          Pn->data[i1] = P->data[i1 + Sppc_idx_1 * n];
+          Pn_data[i1] = P_data[i1 + loop_ub * n];
         }
       } else {
-        c_loop_ub = (int32_T)muDoubleScalarFloor(BotK->data[n] - 1.0);
+        loop_ub = (int32_T)(BotK_data[n] - 1.0);
         i1 = Pn->size[0];
-        Pn->size[0] = c_loop_ub + 1;
+        Pn->size[0] = loop_ub + 1;
         emxEnsureCapacity_real_T(Pn, i1);
-        for (i1 = 0; i1 <= c_loop_ub; i1++) {
-          Pn->data[i1] = P->data[i1];
+        Pn_data = Pn->data;
+        for (i1 = 0; i1 <= loop_ub; i1++) {
+          Pn_data[i1] = P_data[i1];
         }
         /*  .' is for codegen, so P and (1:k).' both column vectors */
       }
       /* EOSCG_DENSJMD95_BSQ Fast Boussinesq JMD95 in-situ density. */
-      /*  */
       /*  */
       /*  rho = eoscg_densjmd95_bsq(s,t,z)                             [ kg /
        * m^3 ] */
@@ -202,7 +205,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
        */
       /*  hard-coded into this function (edit variables grav and rhob as
        * needed). */
-      /*  */
       /*  */
       /*  This function is derived from densjmd95.m, documented below. Input
        * checks */
@@ -227,12 +229,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
       /*  3D arrays of size [nz, nx, ny], while p can be a vector of size
        * [nz,1]. */
       /*  */
-      /*  */
       /*  Author(s)       : Geoff Stanley */
       /*  Email           : g.stanley@unsw.edu.au */
       /*  Email           : geoffstanley@gmail.com */
       /*  Version         : 1.0 */
-      /*  */
       /*  */
       /*  DENSJMD95    Density of sea water */
       /* =========================================================================
@@ -266,7 +266,7 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
       /*  Boussinesq reference density [kg / m^3] */
       /*  Pascal to dbar conversion [dbar / Pa] */
       /*  depth to pressure conversion [dbar / m] */
-      b_p = p->data[n] * 1.015335;
+      b_p = p_data[n] * 1.015335;
       /*  Henceforth z is actually pressure [dbar] */
       /*  coefficients nonlinear equation of state in pressure coordinates for
        */
@@ -275,88 +275,71 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
       /*  coefficients in pressure coordinates for */
       /*  3. secant bulk modulus K of fresh water at p = 0 */
       /*  == original * 10 */
-      /*  == original * 10 */
-      /*  == original * 10 */
-      /*  == original * 10 */
-      /*  == original * 10 */
       /*  4. secant bulk modulus K of sea water at p = 0 */
-      /*  == original * 10 */
-      /*  == original * 10 */
-      /*  == original * 10 */
-      /*  == original * 10 */
-      /*  == original * 10 */
-      /*  == original * 10 */
       /*  == original * 10 */
       /*  5. secant bulk modulus K of sea water at p */
       /*  == original / 10 */
-      /*  == original / 10 */
-      /*  == original / 10 */
-      /*  == original / 10 */
-      /*  == original / 10 */
-      /*  == original / 10 */
-      s1o2 = muDoubleScalarSqrt(s->data[n]);
+      s1o2 = muDoubleScalarSqrt(s_data[n]);
       rn =
-          ((t->data[n] *
-                (t->data[n] *
-                     (t->data[n] * (t->data[n] * (t->data[n] * 6.536332E-9 +
-                                                  -1.120083E-6) +
-                                    0.0001001685) +
-                      -0.00909529) +
+          ((t_data[n] *
+                (t_data[n] *
+                     (t_data[n] *
+                          (t_data[n] * (t_data[n] * 6.536332E-9 - 1.120083E-6) +
+                           0.0001001685) -
+                      0.00909529) +
                  0.06793952) +
             999.842594) +
-           s->data[n] *
-               (((t->data[n] *
-                      (t->data[n] *
-                           (t->data[n] * (t->data[n] * 5.3875E-9 + -8.2467E-7) +
-                            7.6438E-5) +
-                       -0.0040899) +
+           s_data[n] *
+               (((t_data[n] * (t_data[n] * (t_data[n] * (t_data[n] * 5.3875E-9 -
+                                                         8.2467E-7) +
+                                            7.6438E-5) -
+                               0.0040899) +
                   0.824493) +
-                 s1o2 * (t->data[n] * (t->data[n] * -1.6546E-6 + 0.00010227) +
-                         -0.00572466)) +
-                s->data[n] * 0.00048314)) /
+                 s1o2 * (t_data[n] * (t_data[n] * -1.6546E-6 + 0.00010227) -
+                         0.00572466)) +
+                s_data[n] * 0.00048314)) /
           (1.0 -
            b_p /
-               (((t->data[n] *
-                      (t->data[n] * (t->data[n] * (t->data[n] * -0.0004190253 +
-                                                   0.09648704) +
-                                     -17.06103) +
+               (((t_data[n] *
+                      (t_data[n] * (t_data[n] * (t_data[n] * -0.0004190253 +
+                                                 0.09648704) -
+                                    17.06103) +
                        1444.304) +
                   196593.3) +
-                 s->data[n] *
-                     ((t->data[n] * (t->data[n] * (t->data[n] * -0.0005084188 +
-                                                   0.06283263) +
-                                     -3.101089) +
+                 s_data[n] *
+                     ((t_data[n] * (t_data[n] * (t_data[n] * -0.0005084188 +
+                                                 0.06283263) -
+                                    3.101089) +
                        528.4855) +
-                      s1o2 * (t->data[n] *
-                                  (t->data[n] * -0.004619924 + 0.09085835) +
-                              3.88664))) +
-                b_p * (((t->data[n] * (t->data[n] * (t->data[n] * 1.956415E-6 +
-                                                     -0.0002984642) +
-                                       0.02212276) +
-                         3.186519) +
-                        s->data[n] * ((t->data[n] * (t->data[n] * 2.059331E-7 +
-                                                     -0.0001847318) +
-                                       0.006704388) +
-                                      s1o2 * 0.0001480266)) +
-                       b_p * ((t->data[n] *
-                                   (t->data[n] * 1.39468E-8 + -1.202016E-6) +
-                               2.102898E-5) +
-                              s->data[n] *
-                                  (t->data[n] * (t->data[n] * 6.207323E-11 +
-                                                 6.128773E-9) +
-                                   -2.040237E-7)))));
+                      s1o2 *
+                          (t_data[n] * (t_data[n] * -0.004619924 + 0.09085835) +
+                           3.88664))) +
+                b_p *
+                    (((t_data[n] * (t_data[n] * (t_data[n] * 1.956415E-6 -
+                                                 0.0002984642) +
+                                    0.02212276) +
+                       3.186519) +
+                      s_data[n] * ((t_data[n] * (t_data[n] * 2.059331E-7 -
+                                                 0.0001847318) +
+                                    0.006704388) +
+                                   s1o2 * 0.0001480266)) +
+                     b_p *
+                         ((t_data[n] * (t_data[n] * 1.39468E-8 - 1.202016E-6) +
+                           2.102898E-5) +
+                          s_data[n] * (t_data[n] * (t_data[n] * 6.207323E-11 +
+                                                    6.128773E-9) -
+                                       2.040237E-7)))));
       /*  Search for a sign-change, expanding outward from an initial guess */
       /* [lb, ub] = fzero_guess_to_bounds(@diff_avgx, p(n), Pn(1), Pn(k), ... */
       /*   Sppcn, Tppcn, Pn, s(n), t(n), p(n), d);  % DEV:  testing reference p
        * = average of current and point-to-be */
-      fb = p->data[n];
-      tol = Pn->data[0];
-      m = Pn->data[(int32_T)BotK->data[n] - 1];
-      b_p = p->data[n];
+      fb = p_data[n];
+      tol = Pn_data[0];
+      m = Pn_data[(int32_T)BotK_data[n] - 1];
+      b_p = p_data[n];
       /* FZERO_GUESS_TO_BOUNDS  Search for a sign change bounding a zero of a */
       /*                        univariate function, expanding geometrically */
       /*                        outward from an initial guess. */
-      /*  */
       /*  */
       /*  [a, b] = fzero_guess_to_bounds(f, x) */
       /*  finds a < b such that f(a) and f(b) have different sign*, meaning a */
@@ -393,7 +376,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
       /*  */
       /*  This function is compatible with MATLAB's code generation. */
       /*  */
-      /*  */
       /*  --- Input: */
       /*    f       : handle to a function that accepts a real scalar as its
        * first */
@@ -403,15 +385,12 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
       /*    B       : scalar upper bound */
       /*    varargin: All additional inputs are passed directly to f */
       /*  */
-      /*  */
       /*  --- Output: */
       /*    a : lower bound for interval containing a root, scalar */
       /*    b : upper bound for interval containing a root, scalar */
       /*  */
-      /*  */
       /*  --- Acknowledgements: */
       /*  Expansion from initial guess inspired by MATLAB's fzero.m. */
-      /*  */
       /*  */
       /*  Author    : Geoff Stanley */
       /*  Email     : geoffstanley@gmail.com */
@@ -421,7 +400,7 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
        * from machine precision rounding */
       /*  Geometrically expand from the guess x, until a sign change is found */
       /*  Handle bad inputs */
-      fapos = muDoubleScalarIsNaN(Pn->data[0]);
+      fapos = muDoubleScalarIsNaN(Pn_data[0]);
       if (fapos || muDoubleScalarIsNaN(m) || muDoubleScalarIsNaN(fb)) {
         lb = rtNaN;
         ub = rtNaN;
@@ -445,7 +424,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
         /* out =  eos(s, t, p0) - d - r0 ; */
         /* EOSCG_DENSJMD95_BSQ Fast Boussinesq JMD95 in-situ density. */
         /*  */
-        /*  */
         /*  rho = eoscg_densjmd95_bsq(s,t,z)                             [ kg /
          * m^3 ] */
         /*  computes the Boussinesq JMD95 in-situ density, given practical
@@ -458,7 +436,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
          * are */
         /*  hard-coded into this function (edit variables grav and rhob as
          * needed). */
-        /*  */
         /*  */
         /*  This function is derived from densjmd95.m, documented below. Input
          * checks */
@@ -483,12 +460,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
         /*  3D arrays of size [nz, nx, ny], while p can be a vector of size
          * [nz,1]. */
         /*  */
-        /*  */
         /*  Author(s)       : Geoff Stanley */
         /*  Email           : g.stanley@unsw.edu.au */
         /*  Email           : geoffstanley@gmail.com */
         /*  Version         : 1.0 */
-        /*  */
         /*  */
         /*  DENSJMD95    Density of sea water */
         /* =========================================================================
@@ -533,63 +508,48 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
         /*  coefficients in pressure coordinates for */
         /*  3. secant bulk modulus K of fresh water at p = 0 */
         /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
         /*  4. secant bulk modulus K of sea water at p = 0 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
         /*  == original * 10 */
         /*  5. secant bulk modulus K of sea water at p */
         /*  == original / 10 */
-        /*  == original / 10 */
-        /*  == original / 10 */
-        /*  == original / 10 */
-        /*  == original / 10 */
-        /*  == original / 10 */
         s1o2 = muDoubleScalarSqrt(b_s);
-        if ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 + -1.120083E-6) +
-                                    0.0001001685) +
-                             -0.00909529) +
+        if ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 - 1.120083E-6) +
+                                    0.0001001685) -
+                             0.00909529) +
                       0.06793952) +
                999.842594) +
-              b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 + -8.2467E-7) +
-                                     7.6438E-5) +
-                              -0.0040899) +
+              b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 - 8.2467E-7) +
+                                     7.6438E-5) -
+                              0.0040899) +
                        0.824493) +
-                      s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) +
-                              -0.00572466)) +
+                      s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) -
+                              0.00572466)) +
                      b_s * 0.00048314)) /
                  (1.0 -
                   b_p /
                       (((b_t *
-                             (b_t * (b_t * (b_t * -0.0004190253 + 0.09648704) +
-                                     -17.06103) +
+                             (b_t * (b_t * (b_t * -0.0004190253 + 0.09648704) -
+                                     17.06103) +
                               1444.304) +
                          196593.3) +
                         b_s *
-                            ((b_t * (b_t * (b_t * -0.0005084188 + 0.06283263) +
-                                     -3.101089) +
+                            ((b_t * (b_t * (b_t * -0.0005084188 + 0.06283263) -
+                                     3.101089) +
                               528.4855) +
                              s1o2 * (b_t * (b_t * -0.004619924 + 0.09085835) +
                                      3.88664))) +
                        b_p *
-                           (((b_t * (b_t * (b_t * 1.956415E-6 + -0.0002984642) +
+                           (((b_t * (b_t * (b_t * 1.956415E-6 - 0.0002984642) +
                                      0.02212276) +
                               3.186519) +
-                             b_s * ((b_t * (b_t * 2.059331E-7 + -0.0001847318) +
+                             b_s * ((b_t * (b_t * 2.059331E-7 - 0.0001847318) +
                                      0.006704388) +
                                     s1o2 * 0.0001480266)) +
-                            b_p * ((b_t * (b_t * 1.39468E-8 + -1.202016E-6) +
+                            b_p * ((b_t * (b_t * 1.39468E-8 - 1.202016E-6) +
                                     2.102898E-5) +
                                    b_s * (b_t * (b_t * 6.207323E-11 +
-                                                 6.128773E-9) +
-                                          -2.040237E-7))))) -
+                                                 6.128773E-9) -
+                                          2.040237E-7))))) -
              rn) -
                 d ==
             0.0) {
@@ -616,7 +576,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
           /* out =  eos(s, t, p0) - d - r0 ; */
           /* EOSCG_DENSJMD95_BSQ Fast Boussinesq JMD95 in-situ density. */
           /*  */
-          /*  */
           /*  rho = eoscg_densjmd95_bsq(s,t,z)                             [ kg
            * / m^3 ] */
           /*  computes the Boussinesq JMD95 in-situ density, given practical
@@ -629,7 +588,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
            * are */
           /*  hard-coded into this function (edit variables grav and rhob as
            * needed). */
-          /*  */
           /*  */
           /*  This function is derived from densjmd95.m, documented below. Input
            * checks */
@@ -654,12 +612,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
           /*  3D arrays of size [nz, nx, ny], while p can be a vector of size
            * [nz,1]. */
           /*  */
-          /*  */
           /*  Author(s)       : Geoff Stanley */
           /*  Email           : g.stanley@unsw.edu.au */
           /*  Email           : geoffstanley@gmail.com */
           /*  Version         : 1.0 */
-          /*  */
           /*  */
           /*  DENSJMD95    Density of sea water */
           /* =========================================================================
@@ -703,72 +659,57 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
           /*  coefficients in pressure coordinates for */
           /*  3. secant bulk modulus K of fresh water at p = 0 */
           /*  == original * 10 */
-          /*  == original * 10 */
-          /*  == original * 10 */
-          /*  == original * 10 */
-          /*  == original * 10 */
           /*  4. secant bulk modulus K of sea water at p = 0 */
-          /*  == original * 10 */
-          /*  == original * 10 */
-          /*  == original * 10 */
-          /*  == original * 10 */
-          /*  == original * 10 */
-          /*  == original * 10 */
           /*  == original * 10 */
           /*  5. secant bulk modulus K of sea water at p */
           /*  == original / 10 */
-          /*  == original / 10 */
-          /*  == original / 10 */
-          /*  == original / 10 */
-          /*  == original / 10 */
-          /*  == original / 10 */
           s1o2 = muDoubleScalarSqrt(b_s);
-          if ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 + -1.120083E-6) +
-                                      0.0001001685) +
-                               -0.00909529) +
+          if ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 - 1.120083E-6) +
+                                      0.0001001685) -
+                               0.00909529) +
                         0.06793952) +
                  999.842594) +
-                b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 + -8.2467E-7) +
-                                       7.6438E-5) +
-                                -0.0040899) +
+                b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 - 8.2467E-7) +
+                                       7.6438E-5) -
+                                0.0040899) +
                          0.824493) +
-                        s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) +
-                                -0.00572466)) +
+                        s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) -
+                                0.00572466)) +
                        b_s * 0.00048314)) /
                    (1.0 -
                     b_p /
                         (((b_t * (b_t * (b_t * (b_t * -0.0004190253 +
-                                                0.09648704) +
-                                         -17.06103) +
+                                                0.09648704) -
+                                         17.06103) +
                                   1444.304) +
                            196593.3) +
                           b_s *
                               ((b_t *
-                                    (b_t * (b_t * -0.0005084188 + 0.06283263) +
-                                     -3.101089) +
+                                    (b_t * (b_t * -0.0005084188 + 0.06283263) -
+                                     3.101089) +
                                 528.4855) +
                                s1o2 * (b_t * (b_t * -0.004619924 + 0.09085835) +
                                        3.88664))) +
-                         b_p *
-                             (((b_t *
-                                    (b_t * (b_t * 1.956415E-6 + -0.0002984642) +
-                                     0.02212276) +
-                                3.186519) +
-                               b_s *
-                                   ((b_t * (b_t * 2.059331E-7 + -0.0001847318) +
-                                     0.006704388) +
-                                    s1o2 * 0.0001480266)) +
-                              b_p * ((b_t * (b_t * 1.39468E-8 + -1.202016E-6) +
-                                      2.102898E-5) +
-                                     b_s * (b_t * (b_t * 6.207323E-11 +
-                                                   6.128773E-9) +
-                                            -2.040237E-7))))) -
+                         b_p * (((b_t * (b_t * (b_t * 1.956415E-6 -
+                                                0.0002984642) +
+                                         0.02212276) +
+                                  3.186519) +
+                                 b_s * ((b_t * (b_t * 2.059331E-7 -
+                                                0.0001847318) +
+                                         0.006704388) +
+                                        s1o2 * 0.0001480266)) +
+                                b_p * ((b_t * (b_t * 1.39468E-8 - 1.202016E-6) +
+                                        2.102898E-5) +
+                                       b_s * (b_t * (b_t * 6.207323E-11 +
+                                                     6.128773E-9) -
+                                              2.040237E-7))))) -
                rn) -
                   d ==
               0.0) {
             lb = m;
             ub = m;
           } else {
+            boolean_T fbpos;
             fb = muDoubleScalarMin(muDoubleScalarMax(fb, tol), m);
             /*  bounds are given */
             dxp = (m - fb) / 50.0;
@@ -802,7 +743,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
             /* out =  eos(s, t, p0) - d - r0 ; */
             /* EOSCG_DENSJMD95_BSQ Fast Boussinesq JMD95 in-situ density. */
             /*  */
-            /*  */
             /*  rho = eoscg_densjmd95_bsq(s,t,z)                             [
              * kg / m^3 ] */
             /*  computes the Boussinesq JMD95 in-situ density, given practical
@@ -815,7 +755,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
              * which are */
             /*  hard-coded into this function (edit variables grav and rhob as
              * needed). */
-            /*  */
             /*  */
             /*  This function is derived from densjmd95.m, documented below.
              * Input checks */
@@ -841,12 +780,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
             /*  3D arrays of size [nz, nx, ny], while p can be a vector of size
              * [nz,1]. */
             /*  */
-            /*  */
             /*  Author(s)       : Geoff Stanley */
             /*  Email           : g.stanley@unsw.edu.au */
             /*  Email           : geoffstanley@gmail.com */
             /*  Version         : 1.0 */
-            /*  */
             /*  */
             /*  DENSJMD95    Density of sea water */
             /* =========================================================================
@@ -890,67 +827,52 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
             /*  coefficients in pressure coordinates for */
             /*  3. secant bulk modulus K of fresh water at p = 0 */
             /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
             /*  4. secant bulk modulus K of sea water at p = 0 */
-            /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
             /*  == original * 10 */
             /*  5. secant bulk modulus K of sea water at p */
             /*  == original / 10 */
-            /*  == original / 10 */
-            /*  == original / 10 */
-            /*  == original / 10 */
-            /*  == original / 10 */
-            /*  == original / 10 */
             s1o2 = muDoubleScalarSqrt(b_s);
             fapos =
-                ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 +
-                                                -1.120083E-6) +
-                                         0.0001001685) +
-                                  -0.00909529) +
-                           0.06793952) +
+                ((((b_t *
+                        (b_t * (b_t * (b_t * (b_t * 6.536332E-9 - 1.120083E-6) +
+                                       0.0001001685) -
+                                0.00909529) +
+                         0.06793952) +
                     999.842594) +
-                   b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 + -8.2467E-7) +
-                                          7.6438E-5) +
-                                   -0.0040899) +
+                   b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 - 8.2467E-7) +
+                                          7.6438E-5) -
+                                   0.0040899) +
                             0.824493) +
-                           s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) +
-                                   -0.00572466)) +
+                           s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) -
+                                   0.00572466)) +
                           b_s * 0.00048314)) /
                       (1.0 -
                        b_p / (((b_t * (b_t * (b_t * (b_t * -0.0004190253 +
-                                                     0.09648704) +
-                                              -17.06103) +
+                                                     0.09648704) -
+                                              17.06103) +
                                        1444.304) +
                                 196593.3) +
                                b_s * ((b_t * (b_t * (b_t * -0.0005084188 +
-                                                     0.06283263) +
-                                              -3.101089) +
+                                                     0.06283263) -
+                                              3.101089) +
                                        528.4855) +
                                       s1o2 * (b_t * (b_t * -0.004619924 +
                                                      0.09085835) +
                                               3.88664))) +
-                              b_p * (((b_t * (b_t * (b_t * 1.956415E-6 +
-                                                     -0.0002984642) +
+                              b_p * (((b_t * (b_t * (b_t * 1.956415E-6 -
+                                                     0.0002984642) +
                                               0.02212276) +
                                        3.186519) +
-                                      b_s * ((b_t * (b_t * 2.059331E-7 +
-                                                     -0.0001847318) +
+                                      b_s * ((b_t * (b_t * 2.059331E-7 -
+                                                     0.0001847318) +
                                               0.006704388) +
                                              s1o2 * 0.0001480266)) +
-                                     b_p * ((b_t * (b_t * 1.39468E-8 +
-                                                    -1.202016E-6) +
+                                     b_p * ((b_t * (b_t * 1.39468E-8 -
+                                                    1.202016E-6) +
                                              2.102898E-5) +
                                             b_s * (b_t * (b_t * 6.207323E-11 +
-                                                          6.128773E-9) +
-                                                   -2.040237E-7))))) -
+                                                          6.128773E-9) -
+                                                   2.040237E-7))))) -
                   rn) -
                      d >
                  0.0);
@@ -977,7 +899,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
               /* out =  eos(s, t, p0) - d - r0 ; */
               /* EOSCG_DENSJMD95_BSQ Fast Boussinesq JMD95 in-situ density. */
               /*  */
-              /*  */
               /*  rho = eoscg_densjmd95_bsq(s,t,z)                             [
                * kg / m^3 ] */
               /*  computes the Boussinesq JMD95 in-situ density, given practical
@@ -990,7 +911,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                * which are */
               /*  hard-coded into this function (edit variables grav and rhob as
                * needed). */
-              /*  */
               /*  */
               /*  This function is derived from densjmd95.m, documented below.
                * Input checks */
@@ -1016,12 +936,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
               /*  3D arrays of size [nz, nx, ny], while p can be a vector of
                * size [nz,1]. */
               /*  */
-              /*  */
               /*  Author(s)       : Geoff Stanley */
               /*  Email           : g.stanley@unsw.edu.au */
               /*  Email           : geoffstanley@gmail.com */
               /*  Version         : 1.0 */
-              /*  */
               /*  */
               /*  DENSJMD95    Density of sea water */
               /* =========================================================================
@@ -1065,68 +983,53 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
               /*  coefficients in pressure coordinates for */
               /*  3. secant bulk modulus K of fresh water at p = 0 */
               /*  == original * 10 */
-              /*  == original * 10 */
-              /*  == original * 10 */
-              /*  == original * 10 */
-              /*  == original * 10 */
               /*  4. secant bulk modulus K of sea water at p = 0 */
-              /*  == original * 10 */
-              /*  == original * 10 */
-              /*  == original * 10 */
-              /*  == original * 10 */
-              /*  == original * 10 */
-              /*  == original * 10 */
               /*  == original * 10 */
               /*  5. secant bulk modulus K of sea water at p */
               /*  == original / 10 */
-              /*  == original / 10 */
-              /*  == original / 10 */
-              /*  == original / 10 */
-              /*  == original / 10 */
-              /*  == original / 10 */
               s1o2 = muDoubleScalarSqrt(b_s);
               fbpos =
-                  ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 +
-                                                  -1.120083E-6) +
-                                           0.0001001685) +
-                                    -0.00909529) +
+                  ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 -
+                                                  1.120083E-6) +
+                                           0.0001001685) -
+                                    0.00909529) +
                              0.06793952) +
                       999.842594) +
                      b_s *
-                         (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 + -8.2467E-7) +
-                                          7.6438E-5) +
-                                   -0.0040899) +
+                         (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 - 8.2467E-7) +
+                                          7.6438E-5) -
+                                   0.0040899) +
                             0.824493) +
-                           s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) +
-                                   -0.00572466)) +
+                           s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) -
+                                   0.00572466)) +
                           b_s * 0.00048314)) /
                         (1.0 -
                          b_p / (((b_t * (b_t * (b_t * (b_t * -0.0004190253 +
-                                                       0.09648704) +
-                                                -17.06103) +
+                                                       0.09648704) -
+                                                17.06103) +
                                          1444.304) +
                                   196593.3) +
                                  b_s * ((b_t * (b_t * (b_t * -0.0005084188 +
-                                                       0.06283263) +
-                                                -3.101089) +
+                                                       0.06283263) -
+                                                3.101089) +
                                          528.4855) +
                                         s1o2 * (b_t * (b_t * -0.004619924 +
                                                        0.09085835) +
                                                 3.88664))) +
-                                b_p * (((b_t * (b_t * (b_t * 1.956415E-6 +
-                                                       -0.0002984642) +
+                                b_p * (((b_t * (b_t * (b_t * 1.956415E-6 -
+                                                       0.0002984642) +
                                                 0.02212276) +
                                          3.186519) +
-                                        b_s * ((b_t * (b_t * 2.059331E-7 +
-                                                       -0.0001847318) +
+                                        b_s * ((b_t * (b_t * 2.059331E-7 -
+                                                       0.0001847318) +
                                                 0.006704388) +
                                                s1o2 * 0.0001480266)) +
-                                       b_p * ((b_t * (b_t * 1.39468E-8 +
-                                                      -1.202016E-6) +
+                                       b_p * ((b_t * (b_t * 1.39468E-8 -
+                                                      1.202016E-6) +
                                                2.102898E-5) +
                                               b_s * (b_t * (b_t * 6.207323E-11 +
-                                                            6.128773E-9) +
-                                                     -2.040237E-7))))) -
+                                                            6.128773E-9) -
+                                                     2.040237E-7))))) -
                     rn) -
                        d >
                    0.0);
@@ -1157,7 +1060,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                 /* out =  eos(s, t, p0) - d - r0 ; */
                 /* EOSCG_DENSJMD95_BSQ Fast Boussinesq JMD95 in-situ density. */
                 /*  */
-                /*  */
                 /*  rho = eoscg_densjmd95_bsq(s,t,z) [ kg / m^3 ] */
                 /*  computes the Boussinesq JMD95 in-situ density, given
                  * practical salinity */
@@ -1169,7 +1071,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                  * which are */
                 /*  hard-coded into this function (edit variables grav and rhob
                  * as needed). */
-                /*  */
                 /*  */
                 /*  This function is derived from densjmd95.m, documented below.
                  * Input checks */
@@ -1196,12 +1097,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                 /*  3D arrays of size [nz, nx, ny], while p can be a vector of
                  * size [nz,1]. */
                 /*  */
-                /*  */
                 /*  Author(s)       : Geoff Stanley */
                 /*  Email           : g.stanley@unsw.edu.au */
                 /*  Email           : geoffstanley@gmail.com */
                 /*  Version         : 1.0 */
-                /*  */
                 /*  */
                 /*  DENSJMD95    Density of sea water */
                 /* =========================================================================
@@ -1245,74 +1144,60 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                 /*  coefficients in pressure coordinates for */
                 /*  3. secant bulk modulus K of fresh water at p = 0 */
                 /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
                 /*  4. secant bulk modulus K of sea water at p = 0 */
-                /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
                 /*  == original * 10 */
                 /*  5. secant bulk modulus K of sea water at p */
                 /*  == original / 10 */
-                /*  == original / 10 */
-                /*  == original / 10 */
-                /*  == original / 10 */
-                /*  == original / 10 */
-                /*  == original / 10 */
                 s1o2 = muDoubleScalarSqrt(b_s);
                 fbpos =
-                    ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 +
-                                                    -1.120083E-6) +
-                                             0.0001001685) +
-                                      -0.00909529) +
+                    ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 -
+                                                    1.120083E-6) +
+                                             0.0001001685) -
+                                      0.00909529) +
                                0.06793952) +
                         999.842594) +
-                       b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 +
-                                                     -8.2467E-7) +
-                                              7.6438E-5) +
-                                       -0.0040899) +
+                       b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 -
+                                                     8.2467E-7) +
+                                              7.6438E-5) -
+                                       0.0040899) +
                                 0.824493) +
-                               s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) +
-                                       -0.00572466)) +
+                               s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) -
+                                       0.00572466)) +
                               b_s * 0.00048314)) /
                           (1.0 -
                            b_p /
                                (((b_t * (b_t * (b_t * (b_t * -0.0004190253 +
-                                                       0.09648704) +
-                                                -17.06103) +
+                                                       0.09648704) -
+                                                17.06103) +
                                          1444.304) +
                                   196593.3) +
                                  b_s * ((b_t * (b_t * (b_t * -0.0005084188 +
-                                                       0.06283263) +
-                                                -3.101089) +
+                                                       0.06283263) -
+                                                3.101089) +
                                          528.4855) +
                                         s1o2 * (b_t * (b_t * -0.004619924 +
                                                        0.09085835) +
                                                 3.88664))) +
-                                b_p * (((b_t * (b_t * (b_t * 1.956415E-6 +
-                                                       -0.0002984642) +
+                                b_p * (((b_t * (b_t * (b_t * 1.956415E-6 -
+                                                       0.0002984642) +
                                                 0.02212276) +
                                          3.186519) +
-                                        b_s * ((b_t * (b_t * 2.059331E-7 +
-                                                       -0.0001847318) +
+                                        b_s * ((b_t * (b_t * 2.059331E-7 -
+                                                       0.0001847318) +
                                                 0.006704388) +
                                                s1o2 * 0.0001480266)) +
-                                       b_p * ((b_t * (b_t * 1.39468E-8 +
-                                                      -1.202016E-6) +
+                                       b_p * ((b_t * (b_t * 1.39468E-8 -
+                                                      1.202016E-6) +
                                                2.102898E-5) +
                                               b_s * (b_t * (b_t * 6.207323E-11 +
-                                                            6.128773E-9) +
-                                                     -2.040237E-7))))) -
+                                                            6.128773E-9) -
+                                                     2.040237E-7))))) -
                       rn) -
                          d >
                      0.0);
               }
             }
+            boolean_T guard1 = false;
             do {
               exitg1 = 0;
               guard1 = false;
@@ -1341,7 +1226,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                 /* out =  eos(s, t, p0) - d - r0 ; */
                 /* EOSCG_DENSJMD95_BSQ Fast Boussinesq JMD95 in-situ density. */
                 /*  */
-                /*  */
                 /*  rho = eoscg_densjmd95_bsq(s,t,z) [ kg / m^3 ] */
                 /*  computes the Boussinesq JMD95 in-situ density, given
                  * practical salinity */
@@ -1353,7 +1237,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                  * which are */
                 /*  hard-coded into this function (edit variables grav and rhob
                  * as needed). */
-                /*  */
                 /*  */
                 /*  This function is derived from densjmd95.m, documented below.
                  * Input checks */
@@ -1380,12 +1263,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                 /*  3D arrays of size [nz, nx, ny], while p can be a vector of
                  * size [nz,1]. */
                 /*  */
-                /*  */
                 /*  Author(s)       : Geoff Stanley */
                 /*  Email           : g.stanley@unsw.edu.au */
                 /*  Email           : geoffstanley@gmail.com */
                 /*  Version         : 1.0 */
-                /*  */
                 /*  */
                 /*  DENSJMD95    Density of sea water */
                 /* =========================================================================
@@ -1429,73 +1310,58 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                 /*  coefficients in pressure coordinates for */
                 /*  3. secant bulk modulus K of fresh water at p = 0 */
                 /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
                 /*  4. secant bulk modulus K of sea water at p = 0 */
-                /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
-                /*  == original * 10 */
                 /*  == original * 10 */
                 /*  5. secant bulk modulus K of sea water at p */
                 /*  == original / 10 */
-                /*  == original / 10 */
-                /*  == original / 10 */
-                /*  == original / 10 */
-                /*  == original / 10 */
-                /*  == original / 10 */
                 s1o2 = muDoubleScalarSqrt(b_s);
                 fapos =
-                    ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 +
-                                                    -1.120083E-6) +
-                                             0.0001001685) +
-                                      -0.00909529) +
+                    ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 -
+                                                    1.120083E-6) +
+                                             0.0001001685) -
+                                      0.00909529) +
                                0.06793952) +
                         999.842594) +
-                       b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 +
-                                                     -8.2467E-7) +
-                                              7.6438E-5) +
-                                       -0.0040899) +
+                       b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 -
+                                                     8.2467E-7) +
+                                              7.6438E-5) -
+                                       0.0040899) +
                                 0.824493) +
-                               s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) +
-                                       -0.00572466)) +
+                               s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) -
+                                       0.00572466)) +
                               b_s * 0.00048314)) /
                           (1.0 -
                            b_p /
                                (((b_t * (b_t * (b_t * (b_t * -0.0004190253 +
-                                                       0.09648704) +
-                                                -17.06103) +
+                                                       0.09648704) -
+                                                17.06103) +
                                          1444.304) +
                                   196593.3) +
                                  b_s * ((b_t * (b_t * (b_t * -0.0005084188 +
-                                                       0.06283263) +
-                                                -3.101089) +
+                                                       0.06283263) -
+                                                3.101089) +
                                          528.4855) +
                                         s1o2 * (b_t * (b_t * -0.004619924 +
                                                        0.09085835) +
                                                 3.88664))) +
-                                b_p * (((b_t * (b_t * (b_t * 1.956415E-6 +
-                                                       -0.0002984642) +
+                                b_p * (((b_t * (b_t * (b_t * 1.956415E-6 -
+                                                       0.0002984642) +
                                                 0.02212276) +
                                          3.186519) +
-                                        b_s * ((b_t * (b_t * 2.059331E-7 +
-                                                       -0.0001847318) +
+                                        b_s * ((b_t * (b_t * 2.059331E-7 -
+                                                       0.0001847318) +
                                                 0.006704388) +
                                                s1o2 * 0.0001480266)) +
-                                       b_p * ((b_t * (b_t * 1.39468E-8 +
-                                                      -1.202016E-6) +
+                                       b_p * ((b_t * (b_t * 1.39468E-8 -
+                                                      1.202016E-6) +
                                                2.102898E-5) +
                                               b_s * (b_t * (b_t * 6.207323E-11 +
-                                                            6.128773E-9) +
-                                                     -2.040237E-7))))) -
+                                                            6.128773E-9) -
+                                                     2.040237E-7))))) -
                       rn) -
                          d >
                      0.0);
-                if (fapos != fbpos) {
+                if ((boolean_T)(fapos ^ fbpos)) {
                   /*  fa and fb have different signs */
                   exitg1 = 1;
                 } else {
@@ -1541,7 +1407,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                   /* EOSCG_DENSJMD95_BSQ Fast Boussinesq JMD95 in-situ density.
                    */
                   /*  */
-                  /*  */
                   /*  rho = eoscg_densjmd95_bsq(s,t,z) [ kg / m^3 ] */
                   /*  computes the Boussinesq JMD95 in-situ density, given
                    * practical salinity */
@@ -1553,7 +1418,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                    * density, which are */
                   /*  hard-coded into this function (edit variables grav and
                    * rhob as needed). */
-                  /*  */
                   /*  */
                   /*  This function is derived from densjmd95.m, documented
                    * below. Input checks */
@@ -1580,12 +1444,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                   /*  3D arrays of size [nz, nx, ny], while p can be a vector of
                    * size [nz,1]. */
                   /*  */
-                  /*  */
                   /*  Author(s)       : Geoff Stanley */
                   /*  Email           : g.stanley@unsw.edu.au */
                   /*  Email           : geoffstanley@gmail.com */
                   /*  Version         : 1.0 */
-                  /*  */
                   /*  */
                   /*  DENSJMD95    Density of sea water */
                   /* =========================================================================
@@ -1630,74 +1492,59 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                   /*  coefficients in pressure coordinates for */
                   /*  3. secant bulk modulus K of fresh water at p = 0 */
                   /*  == original * 10 */
-                  /*  == original * 10 */
-                  /*  == original * 10 */
-                  /*  == original * 10 */
-                  /*  == original * 10 */
                   /*  4. secant bulk modulus K of sea water at p = 0 */
-                  /*  == original * 10 */
-                  /*  == original * 10 */
-                  /*  == original * 10 */
-                  /*  == original * 10 */
-                  /*  == original * 10 */
-                  /*  == original * 10 */
                   /*  == original * 10 */
                   /*  5. secant bulk modulus K of sea water at p */
                   /*  == original / 10 */
-                  /*  == original / 10 */
-                  /*  == original / 10 */
-                  /*  == original / 10 */
-                  /*  == original / 10 */
-                  /*  == original / 10 */
                   s1o2 = muDoubleScalarSqrt(b_s);
                   fbpos =
-                      ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 +
-                                                      -1.120083E-6) +
-                                               0.0001001685) +
-                                        -0.00909529) +
+                      ((((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 -
+                                                      1.120083E-6) +
+                                               0.0001001685) -
+                                        0.00909529) +
                                  0.06793952) +
                           999.842594) +
-                         b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 +
-                                                       -8.2467E-7) +
-                                                7.6438E-5) +
-                                         -0.0040899) +
+                         b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 -
+                                                       8.2467E-7) +
+                                                7.6438E-5) -
+                                         0.0040899) +
                                   0.824493) +
-                                 s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) +
-                                         -0.00572466)) +
+                                 s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) -
+                                         0.00572466)) +
                                 b_s * 0.00048314)) /
                             (1.0 -
                              b_p /
                                  (((b_t * (b_t * (b_t * (b_t * -0.0004190253 +
-                                                         0.09648704) +
-                                                  -17.06103) +
+                                                         0.09648704) -
+                                                  17.06103) +
                                            1444.304) +
                                     196593.3) +
                                    b_s * ((b_t * (b_t * (b_t * -0.0005084188 +
-                                                         0.06283263) +
-                                                  -3.101089) +
+                                                         0.06283263) -
+                                                  3.101089) +
                                            528.4855) +
                                           s1o2 * (b_t * (b_t * -0.004619924 +
                                                          0.09085835) +
                                                   3.88664))) +
                                   b_p *
-                                      (((b_t * (b_t * (b_t * 1.956415E-6 +
-                                                       -0.0002984642) +
+                                      (((b_t * (b_t * (b_t * 1.956415E-6 -
+                                                       0.0002984642) +
                                                 0.02212276) +
                                          3.186519) +
-                                        b_s * ((b_t * (b_t * 2.059331E-7 +
-                                                       -0.0001847318) +
+                                        b_s * ((b_t * (b_t * 2.059331E-7 -
+                                                       0.0001847318) +
                                                 0.006704388) +
                                                s1o2 * 0.0001480266)) +
-                                       b_p * ((b_t * (b_t * 1.39468E-8 +
-                                                      -1.202016E-6) +
+                                       b_p * ((b_t * (b_t * 1.39468E-8 -
+                                                      1.202016E-6) +
                                                2.102898E-5) +
                                               b_s * (b_t * (b_t * 6.207323E-11 +
-                                                            6.128773E-9) +
-                                                     -2.040237E-7))))) -
+                                                            6.128773E-9) -
+                                                     2.040237E-7))))) -
                         rn) -
                            d >
                        0.0);
-                  if (fapos != fbpos) {
+                  if ((boolean_T)(fapos ^ fbpos)) {
                     /*  fa and fb have different signs */
                     exitg1 = 1;
                   }
@@ -1718,6 +1565,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
         }
       }
       if (!muDoubleScalarIsNaN(lb)) {
+        real_T b_d;
+        real_T c;
+        real_T e;
+        real_T fc;
         /*  A sign change was discovered, so a root exists in the interval. */
         /*  Solve the nonlinear root-finding problem using Brent's method */
         /* p(n) = fzero_brent(@diff_avgx, lb, ub, tolp, ... */
@@ -1830,35 +1681,11 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
          * pressure */
         /*  p0. */
         /*  Interpolate S and T to the current pressure or depth */
-        c_loop_ub = Sppc->size[0];
-        Sppc_idx_0 = Sppc->size[0];
-        Sppc_idx_1 = Sppc->size[1];
-        Tppc_idx_0 = Tppc->size[0];
-        Tppc_idx_1 = Tppc->size[1];
-        Sppc_size[0] = Sppc->size[0];
-        Sppc_size[1] = loop_ub;
-        for (i1 = 0; i1 < loop_ub; i1++) {
-          for (i2 = 0; i2 < c_loop_ub; i2++) {
-            Sppc_data[i2 + Sppc_size[0] * i1] =
-                Sppc->data[(i2 + Sppc_idx_0 * i1) +
-                           Sppc_idx_0 * Sppc_idx_1 * n];
-          }
-        }
-        c_loop_ub = Tppc->size[0];
-        Sppc_idx_0 = Tppc->size[0];
-        for (i1 = 0; i1 < b_loop_ub; i1++) {
-          for (i2 = 0; i2 < c_loop_ub; i2++) {
-            Tppc_data[i2 + Sppc_idx_0 * i1] =
-                Tppc->data[(i2 + Tppc_idx_0 * i1) +
-                           Tppc_idx_0 * Tppc_idx_1 * n];
-          }
-        }
-        ppc_val2(Pn, Sppc_data, Sppc_size, Tppc_data, lb, &b_s, &b_t);
+        ppc_val2(Pn, Sppcn_data, Sppcn_size, Tppcn_data, lb, &b_s, &b_t);
         /*  Calculate the potential density or potential specific volume
          * difference */
         /* out =  eos(s, t, p0) - d - r0 ; */
         /* EOSCG_DENSJMD95_BSQ Fast Boussinesq JMD95 in-situ density. */
-        /*  */
         /*  */
         /*  rho = eoscg_densjmd95_bsq(s,t,z)                             [ kg /
          * m^3 ] */
@@ -1872,7 +1699,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
          * are */
         /*  hard-coded into this function (edit variables grav and rhob as
          * needed). */
-        /*  */
         /*  */
         /*  This function is derived from densjmd95.m, documented below. Input
          * checks */
@@ -1897,12 +1723,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
         /*  3D arrays of size [nz, nx, ny], while p can be a vector of size
          * [nz,1]. */
         /*  */
-        /*  */
         /*  Author(s)       : Geoff Stanley */
         /*  Email           : g.stanley@unsw.edu.au */
         /*  Email           : geoffstanley@gmail.com */
         /*  Version         : 1.0 */
-        /*  */
         /*  */
         /*  DENSJMD95    Density of sea water */
         /* =========================================================================
@@ -1938,7 +1762,7 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
         /*  Boussinesq reference density [kg / m^3] */
         /*  Pascal to dbar conversion [dbar / Pa] */
         /*  depth to pressure conversion [dbar / m] */
-        b_p = p->data[n] * 1.015335;
+        b_p = p_data[n] * 1.015335;
         /*  Henceforth z is actually pressure [dbar] */
         /*  coefficients nonlinear equation of state in pressure coordinates for
          */
@@ -1947,66 +1771,51 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
         /*  coefficients in pressure coordinates for */
         /*  3. secant bulk modulus K of fresh water at p = 0 */
         /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
         /*  4. secant bulk modulus K of sea water at p = 0 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
         /*  == original * 10 */
         /*  5. secant bulk modulus K of sea water at p */
         /*  == original / 10 */
-        /*  == original / 10 */
-        /*  == original / 10 */
-        /*  == original / 10 */
-        /*  == original / 10 */
-        /*  == original / 10 */
         s1o2 = muDoubleScalarSqrt(b_s);
         dxp =
-            (((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 + -1.120083E-6) +
-                                    0.0001001685) +
-                             -0.00909529) +
+            (((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 - 1.120083E-6) +
+                                    0.0001001685) -
+                             0.00909529) +
                       0.06793952) +
                999.842594) +
-              b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 + -8.2467E-7) +
-                                     7.6438E-5) +
-                              -0.0040899) +
+              b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 - 8.2467E-7) +
+                                     7.6438E-5) -
+                              0.0040899) +
                        0.824493) +
-                      s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) +
-                              -0.00572466)) +
+                      s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) -
+                              0.00572466)) +
                      b_s * 0.00048314)) /
                  (1.0 -
                   b_p /
                       (((b_t *
-                             (b_t * (b_t * (b_t * -0.0004190253 + 0.09648704) +
-                                     -17.06103) +
+                             (b_t * (b_t * (b_t * -0.0004190253 + 0.09648704) -
+                                     17.06103) +
                               1444.304) +
                          196593.3) +
                         b_s *
-                            ((b_t * (b_t * (b_t * -0.0005084188 + 0.06283263) +
-                                     -3.101089) +
+                            ((b_t * (b_t * (b_t * -0.0005084188 + 0.06283263) -
+                                     3.101089) +
                               528.4855) +
                              s1o2 * (b_t * (b_t * -0.004619924 + 0.09085835) +
                                      3.88664))) +
                        b_p *
-                           (((b_t * (b_t * (b_t * 1.956415E-6 + -0.0002984642) +
+                           (((b_t * (b_t * (b_t * 1.956415E-6 - 0.0002984642) +
                                      0.02212276) +
                               3.186519) +
-                             b_s * ((b_t * (b_t * 2.059331E-7 + -0.0001847318) +
+                             b_s * ((b_t * (b_t * 2.059331E-7 - 0.0001847318) +
                                      0.006704388) +
                                     s1o2 * 0.0001480266)) +
-                            b_p * ((b_t * (b_t * 1.39468E-8 + -1.202016E-6) +
+                            b_p * ((b_t * (b_t * 1.39468E-8 - 1.202016E-6) +
                                     2.102898E-5) +
                                    b_s * (b_t * (b_t * 6.207323E-11 +
-                                                 6.128773E-9) +
-                                          -2.040237E-7))))) -
+                                                 6.128773E-9) -
+                                          2.040237E-7))))) -
              rn) -
-            phi->data[n];
+            phi_data[n];
         /*  Evaluate difference between (a) eos at location on the cast where
          * the */
         /*  pressure or depth is p, and (b) eos at location on the cast where
@@ -2020,35 +1829,11 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
          * pressure */
         /*  p0. */
         /*  Interpolate S and T to the current pressure or depth */
-        c_loop_ub = Sppc->size[0];
-        Sppc_idx_0 = Sppc->size[0];
-        Sppc_idx_1 = Sppc->size[1];
-        Tppc_idx_0 = Tppc->size[0];
-        Tppc_idx_1 = Tppc->size[1];
-        Sppc_size[0] = Sppc->size[0];
-        Sppc_size[1] = loop_ub;
-        for (i1 = 0; i1 < loop_ub; i1++) {
-          for (i2 = 0; i2 < c_loop_ub; i2++) {
-            Sppc_data[i2 + Sppc_size[0] * i1] =
-                Sppc->data[(i2 + Sppc_idx_0 * i1) +
-                           Sppc_idx_0 * Sppc_idx_1 * n];
-          }
-        }
-        c_loop_ub = Tppc->size[0];
-        Sppc_idx_0 = Tppc->size[0];
-        for (i1 = 0; i1 < b_loop_ub; i1++) {
-          for (i2 = 0; i2 < c_loop_ub; i2++) {
-            Tppc_data[i2 + Sppc_idx_0 * i1] =
-                Tppc->data[(i2 + Tppc_idx_0 * i1) +
-                           Tppc_idx_0 * Tppc_idx_1 * n];
-          }
-        }
-        ppc_val2(Pn, Sppc_data, Sppc_size, Tppc_data, ub, &b_s, &b_t);
+        ppc_val2(Pn, Sppcn_data, Sppcn_size, Tppcn_data, ub, &b_s, &b_t);
         /*  Calculate the potential density or potential specific volume
          * difference */
         /* out =  eos(s, t, p0) - d - r0 ; */
         /* EOSCG_DENSJMD95_BSQ Fast Boussinesq JMD95 in-situ density. */
-        /*  */
         /*  */
         /*  rho = eoscg_densjmd95_bsq(s,t,z)                             [ kg /
          * m^3 ] */
@@ -2062,7 +1847,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
          * are */
         /*  hard-coded into this function (edit variables grav and rhob as
          * needed). */
-        /*  */
         /*  */
         /*  This function is derived from densjmd95.m, documented below. Input
          * checks */
@@ -2087,12 +1871,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
         /*  3D arrays of size [nz, nx, ny], while p can be a vector of size
          * [nz,1]. */
         /*  */
-        /*  */
         /*  Author(s)       : Geoff Stanley */
         /*  Email           : g.stanley@unsw.edu.au */
         /*  Email           : geoffstanley@gmail.com */
         /*  Version         : 1.0 */
-        /*  */
         /*  */
         /*  DENSJMD95    Density of sea water */
         /* =========================================================================
@@ -2128,7 +1910,7 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
         /*  Boussinesq reference density [kg / m^3] */
         /*  Pascal to dbar conversion [dbar / Pa] */
         /*  depth to pressure conversion [dbar / m] */
-        b_p = p->data[n] * 1.015335;
+        b_p = p_data[n] * 1.015335;
         /*  Henceforth z is actually pressure [dbar] */
         /*  coefficients nonlinear equation of state in pressure coordinates for
          */
@@ -2137,66 +1919,50 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
         /*  coefficients in pressure coordinates for */
         /*  3. secant bulk modulus K of fresh water at p = 0 */
         /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
         /*  4. secant bulk modulus K of sea water at p = 0 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
-        /*  == original * 10 */
         /*  == original * 10 */
         /*  5. secant bulk modulus K of sea water at p */
         /*  == original / 10 */
-        /*  == original / 10 */
-        /*  == original / 10 */
-        /*  == original / 10 */
-        /*  == original / 10 */
-        /*  == original / 10 */
         s1o2 = muDoubleScalarSqrt(b_s);
-        fb =
-            (((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 + -1.120083E-6) +
-                                    0.0001001685) +
-                             -0.00909529) +
-                      0.06793952) +
-               999.842594) +
-              b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 + -8.2467E-7) +
-                                     7.6438E-5) +
-                              -0.0040899) +
-                       0.824493) +
-                      s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) +
-                              -0.00572466)) +
-                     b_s * 0.00048314)) /
-                 (1.0 -
-                  b_p /
-                      (((b_t *
-                             (b_t * (b_t * (b_t * -0.0004190253 + 0.09648704) +
-                                     -17.06103) +
-                              1444.304) +
-                         196593.3) +
-                        b_s *
-                            ((b_t * (b_t * (b_t * -0.0005084188 + 0.06283263) +
-                                     -3.101089) +
-                              528.4855) +
-                             s1o2 * (b_t * (b_t * -0.004619924 + 0.09085835) +
-                                     3.88664))) +
-                       b_p *
-                           (((b_t * (b_t * (b_t * 1.956415E-6 + -0.0002984642) +
-                                     0.02212276) +
-                              3.186519) +
-                             b_s * ((b_t * (b_t * 2.059331E-7 + -0.0001847318) +
-                                     0.006704388) +
-                                    s1o2 * 0.0001480266)) +
-                            b_p * ((b_t * (b_t * 1.39468E-8 + -1.202016E-6) +
-                                    2.102898E-5) +
-                                   b_s * (b_t * (b_t * 6.207323E-11 +
-                                                 6.128773E-9) +
-                                          -2.040237E-7))))) -
-             rn) -
-            phi->data[n];
+        fb = (((b_t * (b_t * (b_t * (b_t * (b_t * 6.536332E-9 - 1.120083E-6) +
+                                     0.0001001685) -
+                              0.00909529) +
+                       0.06793952) +
+                999.842594) +
+               b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 - 8.2467E-7) +
+                                      7.6438E-5) -
+                               0.0040899) +
+                        0.824493) +
+                       s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) -
+                               0.00572466)) +
+                      b_s * 0.00048314)) /
+                  (1.0 -
+                   b_p /
+                       (((b_t *
+                              (b_t * (b_t * (b_t * -0.0004190253 + 0.09648704) -
+                                      17.06103) +
+                               1444.304) +
+                          196593.3) +
+                         b_s *
+                             ((b_t * (b_t * (b_t * -0.0005084188 + 0.06283263) -
+                                      3.101089) +
+                               528.4855) +
+                              s1o2 * (b_t * (b_t * -0.004619924 + 0.09085835) +
+                                      3.88664))) +
+                        b_p *
+                            (((b_t * (b_t * (b_t * 1.956415E-6 - 0.0002984642) +
+                                      0.02212276) +
+                               3.186519) +
+                              b_s * ((b_t * (b_t * 2.059331E-7 - 0.0001847318) +
+                                      0.006704388) +
+                                     s1o2 * 0.0001480266)) +
+                             b_p * ((b_t * (b_t * 1.39468E-8 - 1.202016E-6) +
+                                     2.102898E-5) +
+                                    b_s * (b_t * (b_t * 6.207323E-11 +
+                                                  6.128773E-9) -
+                                           2.040237E-7))))) -
+              rn) -
+             phi_data[n];
         c = lb;
         fc = dxp;
         e = ub - lb;
@@ -2232,7 +1998,7 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
                       (2.0 * m * dxp * (dxp - dxm) - (ub - lb) * (dxm - 1.0));
                 dxp = (dxp - 1.0) * (dxm - 1.0) * (b_s - 1.0);
               }
-              if (0.0 < b_p) {
+              if (b_p > 0.0) {
                 dxp = -dxp;
               } else {
                 b_p = -b_p;
@@ -2251,7 +2017,7 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
             dxp = fb;
             if (tol < muDoubleScalarAbs(b_d)) {
               ub += b_d;
-            } else if (0.0 < m) {
+            } else if (m > 0.0) {
               ub += tol;
             } else {
               ub -= tol;
@@ -2276,7 +2042,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
             /* out =  eos(s, t, p0) - d - r0 ; */
             /* EOSCG_DENSJMD95_BSQ Fast Boussinesq JMD95 in-situ density. */
             /*  */
-            /*  */
             /*  rho = eoscg_densjmd95_bsq(s,t,z)                             [
              * kg / m^3 ] */
             /*  computes the Boussinesq JMD95 in-situ density, given practical
@@ -2289,7 +2054,6 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
              * which are */
             /*  hard-coded into this function (edit variables grav and rhob as
              * needed). */
-            /*  */
             /*  */
             /*  This function is derived from densjmd95.m, documented below.
              * Input checks */
@@ -2315,12 +2079,10 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
             /*  3D arrays of size [nz, nx, ny], while p can be a vector of size
              * [nz,1]. */
             /*  */
-            /*  */
             /*  Author(s)       : Geoff Stanley */
             /*  Email           : g.stanley@unsw.edu.au */
             /*  Email           : geoffstanley@gmail.com */
             /*  Version         : 1.0 */
-            /*  */
             /*  */
             /*  DENSJMD95    Density of sea water */
             /* =========================================================================
@@ -2356,7 +2118,7 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
             /*  Boussinesq reference density [kg / m^3] */
             /*  Pascal to dbar conversion [dbar / Pa] */
             /*  depth to pressure conversion [dbar / m] */
-            b_p = p->data[n] * 1.015335;
+            b_p = p_data[n] * 1.015335;
             /*  Henceforth z is actually pressure [dbar] */
             /*  coefficients nonlinear equation of state in pressure coordinates
              * for */
@@ -2365,70 +2127,54 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
             /*  coefficients in pressure coordinates for */
             /*  3. secant bulk modulus K of fresh water at p = 0 */
             /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
             /*  4. secant bulk modulus K of sea water at p = 0 */
-            /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
-            /*  == original * 10 */
             /*  == original * 10 */
             /*  5. secant bulk modulus K of sea water at p */
             /*  == original / 10 */
-            /*  == original / 10 */
-            /*  == original / 10 */
-            /*  == original / 10 */
-            /*  == original / 10 */
-            /*  == original / 10 */
             s1o2 = muDoubleScalarSqrt(b_s);
-            fb =
-                (((b_t *
-                       (b_t * (b_t * (b_t * (b_t * 6.536332E-9 + -1.120083E-6) +
-                                      0.0001001685) +
-                               -0.00909529) +
-                        0.06793952) +
-                   999.842594) +
-                  b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 + -8.2467E-7) +
-                                         7.6438E-5) +
-                                  -0.0040899) +
-                           0.824493) +
-                          s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) +
-                                  -0.00572466)) +
-                         b_s * 0.00048314)) /
-                     (1.0 -
-                      b_p / (((b_t * (b_t * (b_t * (b_t * -0.0004190253 +
-                                                    0.09648704) +
-                                             -17.06103) +
-                                      1444.304) +
-                               196593.3) +
-                              b_s * ((b_t * (b_t * (b_t * -0.0005084188 +
-                                                    0.06283263) +
-                                             -3.101089) +
-                                      528.4855) +
-                                     s1o2 * (b_t * (b_t * -0.004619924 +
-                                                    0.09085835) +
-                                             3.88664))) +
-                             b_p * (((b_t * (b_t * (b_t * 1.956415E-6 +
-                                                    -0.0002984642) +
-                                             0.02212276) +
-                                      3.186519) +
-                                     b_s * ((b_t * (b_t * 2.059331E-7 +
-                                                    -0.0001847318) +
-                                             0.006704388) +
-                                            s1o2 * 0.0001480266)) +
-                                    b_p * ((b_t * (b_t * 1.39468E-8 +
-                                                   -1.202016E-6) +
-                                            2.102898E-5) +
-                                           b_s * (b_t * (b_t * 6.207323E-11 +
-                                                         6.128773E-9) +
-                                                  -2.040237E-7))))) -
-                 rn) -
-                d;
-            if (((0.0 < fb) && (0.0 < fc)) || ((fb <= 0.0) && (fc <= 0.0))) {
+            fb = (((b_t *
+                        (b_t * (b_t * (b_t * (b_t * 6.536332E-9 - 1.120083E-6) +
+                                       0.0001001685) -
+                                0.00909529) +
+                         0.06793952) +
+                    999.842594) +
+                   b_s * (((b_t * (b_t * (b_t * (b_t * 5.3875E-9 - 8.2467E-7) +
+                                          7.6438E-5) -
+                                   0.0040899) +
+                            0.824493) +
+                           s1o2 * (b_t * (b_t * -1.6546E-6 + 0.00010227) -
+                                   0.00572466)) +
+                          b_s * 0.00048314)) /
+                      (1.0 -
+                       b_p / (((b_t * (b_t * (b_t * (b_t * -0.0004190253 +
+                                                     0.09648704) -
+                                              17.06103) +
+                                       1444.304) +
+                                196593.3) +
+                               b_s * ((b_t * (b_t * (b_t * -0.0005084188 +
+                                                     0.06283263) -
+                                              3.101089) +
+                                       528.4855) +
+                                      s1o2 * (b_t * (b_t * -0.004619924 +
+                                                     0.09085835) +
+                                              3.88664))) +
+                              b_p * (((b_t * (b_t * (b_t * 1.956415E-6 -
+                                                     0.0002984642) +
+                                              0.02212276) +
+                                       3.186519) +
+                                      b_s * ((b_t * (b_t * 2.059331E-7 -
+                                                     0.0001847318) +
+                                              0.006704388) +
+                                             s1o2 * 0.0001480266)) +
+                                     b_p * ((b_t * (b_t * 1.39468E-8 -
+                                                    1.202016E-6) +
+                                             2.102898E-5) +
+                                            b_s * (b_t * (b_t * 6.207323E-11 +
+                                                          6.128773E-9) -
+                                                   2.040237E-7))))) -
+                  rn) -
+                 d;
+            if (((fb > 0.0) && (fc > 0.0)) || ((fb <= 0.0) && (fc <= 0.0))) {
               c = lb;
               fc = dxp;
               e = ub - lb;
@@ -2436,44 +2182,22 @@ void omega_vertsolve(const emxArray_real_T *Sppc, const emxArray_real_T *Tppc,
             }
           }
         } while (exitg1 == 0);
-        p->data[n] = ub;
+        p_data[n] = ub;
         /*  Interpolate S and T onto the updated surface */
-        c_loop_ub = Sppc->size[0];
-        Sppc_idx_0 = Sppc->size[0];
-        Sppc_idx_1 = Sppc->size[1];
-        Tppc_idx_0 = Tppc->size[0];
-        Tppc_idx_1 = Tppc->size[1];
-        Sppc_size[0] = Sppc->size[0];
-        Sppc_size[1] = loop_ub;
-        for (i1 = 0; i1 < loop_ub; i1++) {
-          for (i2 = 0; i2 < c_loop_ub; i2++) {
-            Sppc_data[i2 + Sppc_size[0] * i1] =
-                Sppc->data[(i2 + Sppc_idx_0 * i1) +
-                           Sppc_idx_0 * Sppc_idx_1 * n];
-          }
-        }
-        loop_ub = Tppc->size[0];
-        Sppc_idx_0 = Tppc->size[0];
-        for (i1 = 0; i1 < b_loop_ub; i1++) {
-          for (i2 = 0; i2 < loop_ub; i2++) {
-            Tppc_data[i2 + Sppc_idx_0 * i1] =
-                Tppc->data[(i2 + Tppc_idx_0 * i1) +
-                           Tppc_idx_0 * Tppc_idx_1 * n];
-          }
-        }
-        ppc_val2(Pn, Sppc_data, Sppc_size, Tppc_data, p->data[n], &s->data[n],
-                 &t->data[n]);
+        ppc_val2(Pn, Sppcn_data, Sppcn_size, Tppcn_data, p_data[n], &d, &b_p);
+        t_data[n] = b_p;
+        s_data[n] = d;
       } else {
-        p->data[n] = rtNaN;
-        s->data[n] = rtNaN;
-        t->data[n] = rtNaN;
+        p_data[n] = rtNaN;
+        s_data[n] = rtNaN;
+        t_data[n] = rtNaN;
       }
     } else {
       /*  phi is nan, or only one grid cell so cannot interpolate. */
       /*  This will ensure s,t,p all have the same nan structure */
-      p->data[n] = rtNaN;
-      s->data[n] = rtNaN;
-      t->data[n] = rtNaN;
+      p_data[n] = rtNaN;
+      s_data[n] = rtNaN;
+      t_data[n] = rtNaN;
     }
   }
   emxFree_real_T(&Pn);

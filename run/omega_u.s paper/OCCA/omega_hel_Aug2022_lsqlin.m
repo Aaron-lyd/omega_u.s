@@ -8,7 +8,7 @@ datafolder='/Users/yandonglang/OneDrive - UNSW/1. YL_PHD/3. Code/First year code
 % Reshape the data into correct shape
 tB = eos80_legacy_pt(SB,TB,zeros(size(SB)),pB); % 1980 code
 SB = permute(SB, [3 1 2]);
-tB = permute(tB, [3 1 2]);
+tB = permute(tB, [3 1 2]); % in situ temperature
 pB = permute(pB, [3 1 2]);
 TB = permute(TB, [3 1 2]);
 ZB = -g.RC; % ZB is depth and ZB >0
@@ -25,6 +25,10 @@ V = ncread('DDvvel.0406clim.nc','v');V = squeeze(V(:,:,:,1));V = permute(V, [3 1
 interpfn = @ppc_pchip;
 SppZ = interpfn(ZB, SB);
 TppZ = interpfn(ZB, TB);
+
+% SppP = interpfn(pB, SB);
+% TppP = interpfn(pB, TB);
+
 
 lead1 = @(x) reshape(x, [1 size(x)]);
 
@@ -44,6 +48,42 @@ A_Y_f = @(F) (F + jp1(F)) / 2;
 
 D_X_b = @(F)  F - im1(F);
 D_Y_b = @(F)  F - jm1(F);
+
+%% Neutral density labels
+
+XC3 = repmat(permute(g.XCvec, [3 1 2]),[g.nz,1,g.ny]);
+YC3 = repmat(permute(g.YCvec, [3 1 2]),[g.nz,g.nx,1]);
+longOCCAzxy = XC3;
+latOCCAzxy = YC3;
+dpdz_bsq = (g.grav * g.rho_c * 1e-4);
+pBB = dpdz_bsq * ZB;  % Get Boussinesq pressure (third argument to EOS) from Depth.
+
+tic
+% gn = eos80_legacy_gamma_n_STP_GJS_no_extrapolation(SB, tB, pB, longOCCAzxy, latOCCAzxy);
+gscvE = eos80_legacy_gamma_scv_STP_GJS_no_extrapolation(SB, tB, pBB, longOCCAzxy, latOCCAzxy);
+toc
+
+%% Neutral density surface
+g_iso = interpfn(ZB, gscvE(:,i0,j0), z0); % The isovalue of the potential density we want
+% g_iso = 27.76;
+[sscv, tscv, pscv] = eos80_legacy_neutral_surfaces(SB, tB, pBB, gscvE, g_iso);
+tscv = eos80_legacy_pt(sscv,tscv,pscv, zeros(size(pscv))); % 1980 code, transfer in-situ temperature to potential temperature
+sscv = squeeze(sscv);tscv = squeeze(tscv);pscv = squeeze(pscv);
+zscv = pscv / dpdz_bsq; % transfer pressure to depth
+
+%% gammaT
+SR = gsw_SR_from_SP(SB);
+SA = gsw_SA_from_SP(SB,pB,longOCCAzxy,latOCCAzxy);
+CT = gsw_CT_from_pt(SA,TB);
+tic
+[z_gt,p_gt,sigref,gammat] = gsw_gammat_analytic_os_2021(SR,CT);
+toc
+
+%% gammaT surface
+gammat0 = interpfn(ZB, gammat(:,i0,j0), z0); % The isovalue of the potential density we want
+z_gammat = interpfn(gammat, ZB, gammat0); % the depth of the gammaT=27.5 surface, ZB is the depth
+s_gammat = interpfn(ZB, SB, z_gammat);
+t_gammat = interpfn(ZB, TB, z_gammat);
 
 %% reference cast
 % x0 = 243; y0 = -25; % South Pacific
@@ -98,12 +138,19 @@ z_insitu = interpfn(insitu_density, ZB, insitu0); % the in situ density surface 
 OPTS = [];
 [z_topo, s_topo, t_topo, RG, s0, t0, d_fn, diags_topo] = topobaric_surface(SB, TB, ZB, z_sigma, I0,[1;1], OPTS);
 
+%% orthobaric surface
+OPTS = [];
+OPTS.REEB = false;
+
+[z_ortho, s_ortho, t_ortho, RGortho, s0ortho, t0ortho, d_fnortho, diags_ortho] = topobaric_surface(SB, TB, ZB, z_sigma, I0,[1;1], OPTS);
+
 %% omega_1
 OPTS = [];
 OPTS.POISSON = 0;
 OPTS.INTERPFN = interpfn;
 
 [zns, sns, tns, dns] = omega_surface(SB, TB, ZB, z_sigma, I0,[1;1], OPTS); %in x-y direction
+
 
 %% Codegen for ppc_val* and ntp_slope
 [nz, nx, ny] = size(SB);
@@ -125,6 +172,7 @@ OPTS.DXGvec = g.DXGvec;
 OPTS.DYCsc = g.DYCsc;
 OPTS.DYGsc = g.DYGsc;
 OPTS.RACvec = g.RACvec;
+%OPTS.RACvec = 1;
 OPTS.XCvec = g.XCvec;
 OPTS.YCvec = g.YCvec;
 
@@ -144,9 +192,10 @@ OPTS.STRAT = 1;
 OPTS.PCG = 0;
 OPTS.LM = 0;
 OPTS.H_SIM = 0;
-OPTS.TK = 5e-8;
+OPTS.TK = 8e-9;
 
 OPTS.CHOLESKY = 0;
+OPTS.LSQLIN = 0;
 OPTS.ITER = 50;
 OPTS.MODE = 1;
 
@@ -160,8 +209,9 @@ OPTS.STRAT = 1;
 OPTS.LM = 0;
 OPTS.TK = 1e-11;
 
-OPTS.ITER = 50;
 OPTS.CHOLESKY = 0;
+OPTS.LSQLIN = 0;
+OPTS.ITER = 50;
 OPTS.MODE = 9;
 
 [z_helTz,s_helTz,t_helTz, ~,d_helTz] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
@@ -175,6 +225,7 @@ OPTS.LM = 0;
 OPTS.TK = 1e-13;
 
 OPTS.CHOLESKY = 0;
+OPTS.LSQLIN = 0;
 OPTS.ITER = 50;
 OPTS.MODE = 10;
 
@@ -220,7 +271,8 @@ OPTS.data_cube=0;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
 OPTS.LM = 0;
-OPTS.TK = 5e-9;
+OPTS.TK = 5e-9; % used for 20Aug2022 result
+% OPTS.TK = 8e-9;
 OPTS.H_SIM = 0;
 
 % weight of ehelu and ehelv
@@ -228,13 +280,14 @@ OPTS.s2xyW = 1;
 OPTS.FIGS_SHOW = 0;
 
 OPTS.CHOLESKY = 0;
+OPTS.LSQLIN = 0;
 OPTS.ITER = 50;
 OPTS.MODE = 8;
 
 [z_hels2xy,s_hels2xy,t_hels2xy, ~,d_hels2xy] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
 
 %% save data
-% save omega_u_s_paper_9Aug s_hel t_hel z_hel...
+% save omega_u_s_paper_10NOV s_hel t_hel z_hel...
 %                                sns_s tns_s zns_s...
 %                                s_helTz t_helTz z_helTz...
 %                                s_helSz t_helSz z_helSz...
@@ -242,7 +295,7 @@ OPTS.MODE = 8;
 %                                s_hels2xy t_hels2xy z_hels2xy...
 %                                zns sns tns...
 %                                z_sigma s_sigma t_sigma                               
-    
+%     
 %% s, e^hel and flux  
 % prepare for the grid information
 OPT.DXCvec = g.DXCvec; % dx
@@ -256,6 +309,9 @@ OPT.nx = g.nx;
 OPT.ny = g.ny;
 OPT.tolz = 1e-8; % tolerance of slope error
 OPT.data_cube = 0;
+
+% [s_ns, df_ns, sns_rms, df_ns_rms, ehelns, ehelns_rms, detailns] =...
+%                                  s_ehel_df(zns, SB, TB, ZB, U, V, [1;1], OPT);
 
 % s, ehel and flux for omega+
 OPT.MODES = 0; % using epsilon to calculate slope errors
@@ -292,6 +348,12 @@ OPT.MODES = 0; % using NTP to calculate slope errors
 OPT.MODEHEL = 1; % using divergence method to calculate e^hel
 [stopo, s2_topo, stopo_rms, s2_topo_rms, ehel_topo, ehel_topo_rms, flux_topo, detail_topo] =...
                              s_ehel_flux(s_topo,t_topo, z_topo, SB, TB, ZB, U, V, [1;1], OPT);
+
+% s, ehel and flux for orthobaric surface
+OPT.MODES = 0; % using NTP to calculate slope errors
+OPT.MODEHEL = 1; % using divergence method to calculate e^hel
+[sortho, s2_ortho, sortho_rms, s2_ortho_rms, ehel_ortho, ehel_ortho_rms, flux_ortho, detail_ortho] =...
+                             s_ehel_flux(s_ortho,t_ortho, z_ortho, SB, TB, ZB, U, V, [1;1], OPT);
                          
 
 % s, ehel and flux for sigma
@@ -371,7 +433,9 @@ OPTS_plot.lowb = -10;
 data = cat(3, ehelpt, ehelns, ehelns_s, ehel_hel, ehel_helTz, ehel_helSz, ehelns_s2xy, ehel_hel_s2xy);
 data_rms = [ehelpt_rms, ehelns_rms, ehelns_s_rms, ehel_hel_rms, ehel_helTz_rms,...
                                                        ehel_helSz_rms, ehelns_s2xy_rms, ehel_hel_s2xy_rms];
-
+                                                  
+ehelpt_rms = rms_Cgrid(ehelpt, 0, 0, g.RACvec, 0, 0);
+                                                   
 quantity_txt = '$\\bf{u} \\cdot \\bf{s}$ on the ';        
 rms_txt = 'RMS of $\\bf{u} \\cdot \\bf{s}$ = %.2d m/s';        
 txt1 = ['(a) ', quantity_txt,'$\\sigma_{0.75}$-surface, ', rms_txt];
@@ -639,6 +703,43 @@ ad_df_helTz      = 1e-3*df_helTz + ehel_helTz;
 ad_df_helSz      = 1e-3*df_helSz + ehel_helSz;
 ad_df_s2xy     = 1e-3*df_s2xy + ehelns_s2xy;
 ad_df_hel_s2xy = 1e-3*df_hel_s2xy + ehel_hel_s2xy;
+
+figure('Position', [0 0 1200 1000])
+OPTS_plot.n_lim = -1e-7*ones(1,8);
+OPTS_plot.p_lim = 1e-7*ones(1,8);
+OPTS_plot.bwr = ones(1,8);
+OPTS_plot.upb = -6;
+OPTS_plot.lowb = -10;
+OPTS_plot.log = 1;
+
+data = cat(3, ad_df_pt, ad_df_ns, ad_df_ns_s, ad_df_hel,...
+                                          ad_df_helTz, ad_df_helSz, ad_df_s2xy, ad_df_hel_s2xy);
+data_rms = [root_mean_square(ad_df_pt(:)),    root_mean_square(ad_df_ns(:)),...
+            root_mean_square(ad_df_ns_s(:)),  root_mean_square(ad_df_hel(:)),...
+            root_mean_square(ad_df_helTz(:)), root_mean_square(ad_df_helSz(:)),...
+            root_mean_square(ad_df_s2xy(:)),  root_mean_square(ad_df_hel_s2xy(:))];
+quantity_txt = '$\\bf{u} \\cdot \\bf{s}$ + $10^{-3} (m^{-1})*D^f$ on the ';        
+rms_txt = 'RMS  = %.2d m/s';        
+txt1 = ['(a) ', quantity_txt,'$\\sigma_{0.75}$-surface, ', rms_txt];
+txt2 = ['(b) ', quantity_txt,'$\\omega_+$-surface, ', rms_txt];
+txt3 = ['(c) ', quantity_txt,'$\\omega_s$-surface, ', rms_txt];
+txt4 = ['(d) ', quantity_txt,'$\\omega_{\\bf{u} \\cdot \\bf{s}}$-surface, ', rms_txt];
+txt5 = ['(e) ', quantity_txt,'$\\omega_{\\bf{u} \\cdot \\bf{s}\\Theta_z}$-surface, ', rms_txt];
+txt6 = ['(f) ', quantity_txt,'$$\\omega_{\\bf{u} \\cdot \\bf{s}S_z}$-surface, ', rms_txt];
+txt7 = ['(g) ', quantity_txt,'$\\omega_{\\bf{s}^2}$-surface, ', rms_txt];
+txt8 = ['(h) ', quantity_txt,'$\\omega_{\\bf{u} \\cdot \\bf{s}+ \\bf{s}^2}$-surface, ', rms_txt];
+title_text = char(txt1,txt2,txt3,txt4,txt5,txt6,txt7,txt8);
+fig_hf = fig_map_plotting(data, data_rms, title_text, OPTS_plot, OPTS_FIGS);
+
+%% Figure 9: The sum of the advection and diffusion version 2
+ad_df_ns       = 1e-3*df_ns + abs(ehelns);
+ad_df_ns_s     = 1e-3*df_ns_s+ abs(ehelns_s);
+ad_df_pt       = 1e-3*df_pt + abs(ehelpt);
+ad_df_hel      = 1e-3*df_hel + abs(ehel_hel);
+ad_df_helTz      = 1e-3*df_helTz + abs(ehel_helTz);
+ad_df_helSz      = 1e-3*df_helSz + abs(ehel_helSz);
+ad_df_s2xy     = 1e-3*df_s2xy + abs(ehelns_s2xy);
+ad_df_hel_s2xy = 1e-3*df_hel_s2xy + abs(ehel_hel_s2xy);
 
 figure('Position', [0 0 1200 1000])
 OPTS_plot.n_lim = -1e-7*ones(1,8);

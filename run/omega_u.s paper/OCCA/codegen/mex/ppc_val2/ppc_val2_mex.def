@@ -1,0 +1,12 @@
+LIBRARY ppc_val2_mex.mexw64
+EXPORTS
+mexFunction
+mexfilerequiredapiversion
+emlrtMexFcnProperties
+ppc_val2
+ppc_val2_initialize
+ppc_val2_terminate
+ppc_val2_atexit
+emxFree_real_T
+emxInit_real_T
+emxEnsureCapacity_real_T

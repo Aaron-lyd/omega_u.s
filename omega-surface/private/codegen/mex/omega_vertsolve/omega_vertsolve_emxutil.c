@@ -43,7 +43,7 @@ void emxEnsureCapacity_real_T(emxArray_real_T *emxArray, int32_T oldNumel)
     }
     newData = emlrtCallocMex((uint32_T)i, sizeof(real_T));
     if (emxArray->data != NULL) {
-      memcpy(newData, emxArray->data, sizeof(real_T) * oldNumel);
+      memcpy(newData, emxArray->data, sizeof(real_T) * (uint32_T)oldNumel);
       if (emxArray->canFreeData) {
         emlrtFreeMex(emxArray->data);
       }
@@ -61,26 +61,25 @@ void emxFree_real_T(emxArray_real_T **pEmxArray)
       emlrtFreeMex((*pEmxArray)->data);
     }
     emlrtFreeMex((*pEmxArray)->size);
-    emlrtFreeMex(*pEmxArray);
+    emlrtRemoveHeapReference(emlrtRootTLSGlobal, (void *)pEmxArray);
+    emlrtFreeEmxArray(*pEmxArray);
     *pEmxArray = (emxArray_real_T *)NULL;
   }
 }
 
-void emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions,
-                    boolean_T doPush)
+void emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions)
 {
   emxArray_real_T *emxArray;
   int32_T i;
-  *pEmxArray = (emxArray_real_T *)emlrtMallocMex(sizeof(emxArray_real_T));
-  if (doPush) {
-    emlrtPushHeapReferenceStackR2021a(
-        emlrtRootTLSGlobal, false, (void *)pEmxArray, (void *)&emxFree_real_T,
-        NULL, NULL, NULL);
-  }
+  *pEmxArray = (emxArray_real_T *)emlrtMallocEmxArray(sizeof(emxArray_real_T));
+  emlrtPushHeapReferenceStackEmxArray(
+      emlrtRootTLSGlobal, false, (void *)pEmxArray, (void *)&emxFree_real_T,
+      NULL, NULL, NULL);
   emxArray = *pEmxArray;
   emxArray->data = (real_T *)NULL;
   emxArray->numDimensions = numDimensions;
-  emxArray->size = (int32_T *)emlrtMallocMex(sizeof(int32_T) * numDimensions);
+  emxArray->size =
+      (int32_T *)emlrtMallocMex(sizeof(int32_T) * (uint32_T)numDimensions);
   emxArray->allocatedSize = 0;
   emxArray->canFreeData = true;
   for (i = 0; i < numDimensions; i++) {

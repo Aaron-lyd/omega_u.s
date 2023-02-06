@@ -20,19 +20,10 @@ void ppc_val2(const emxArray_real_T *X, const real_T C_data[],
               const int32_T C_size[2], const real_T D_data[], real_T x,
               real_T *y, real_T *z)
 {
-  real_T i;
-  real_T p;
-  real_T t;
-  int32_T b_i;
-  int32_T i1;
-  int32_T j;
-  int32_T k;
+  const real_T *X_data;
   int32_T o;
-  int32_T y_size_idx_1;
-  int8_T y_data[15];
-  int8_T szC_idx_0;
+  X_data = X->data;
   /* PPC_VAL2  Piecewise Polynomial Evaluation, quick and twice */
-  /*  */
   /*  */
   /*  [y,z] = ppc_val2(X, C, D, x) */
   /*  evaluates the piecewise polynomials whose coefficients are C and D and */
@@ -40,7 +31,6 @@ void ppc_val2(const emxArray_real_T *X, const real_T C_data[],
   /*  */
   /*  [y,z] = ppc_val2(..., d) */
   /*  as above but evaluates the d'th derivative. */
-  /*  */
   /*  */
   /*  --- Input: */
   /*  X [    K   x M], knots of the piecewise polynomials */
@@ -51,11 +41,9 @@ void ppc_val2(const emxArray_real_T *X, const real_T C_data[],
   /*                   given, which means to evaluate with no differentiation.
    */
   /*  */
-  /*  */
   /*  --- Output: */
   /*  y [L x N], the first piecewise polynomial evaluated at x */
   /*  z [L x N], the second piecewise polynomial evaluated at x */
-  /*  */
   /*  */
   /*  --- Notes: */
   /*  X(:,n) must be monotonically increasing for all n. */
@@ -73,7 +61,6 @@ void ppc_val2(const emxArray_real_T *X, const real_T C_data[],
   /*  */
   /*  If L == 1, this dimension is squeeze()'d out of y and z. */
   /*  */
-  /*  */
   /*  --- Acknowledgements: */
   /*  This code is adapted from MATLAB's ppval.m */
   /*  Author    : Geoff Stanley */
@@ -81,7 +68,6 @@ void ppc_val2(const emxArray_real_T *X, const real_T C_data[],
   /*  Version   : 1.0 */
   /*  History   : 24/10/2019 - initial release */
   /*  Set default to evaluate, not differentiate: */
-  szC_idx_0 = (int8_T)C_size[0];
   /*  Order of the piecewise polynomial */
   /*  number of knots of the piecewise polynomials */
   /*  number of levels to interpolate */
@@ -91,12 +77,12 @@ void ppc_val2(const emxArray_real_T *X, const real_T C_data[],
   *z = rtNaN;
   /*  Evaluate each piecewise polynomial */
   /*  used for linear indexing */
-  /*  used for linear indexing */
-  /*  used for linear indexing */
-  /*  used for linear indexing */
   /*  x(l,n) or x(l,1) as appropriate */
-  if ((!muDoubleScalarIsNaN(x)) && (!muDoubleScalarIsNaN(X->data[0])) &&
-      (!(x < X->data[0])) && (!(x > X->data[X->size[0] - 1]))) {
+  if ((!muDoubleScalarIsNaN(x)) && (!muDoubleScalarIsNaN(X_data[0])) &&
+      (!(x < X_data[0])) && (!(x > X_data[X->size[0] - 1]))) {
+    real_T i;
+    int32_T j;
+    int32_T k;
     /*  Leftmost binary search to find i such that: */
     /*  i = 1                      if xln <= X(1), or */
     /*  i = M                      if X(M) < xln */
@@ -109,7 +95,7 @@ void ppc_val2(const emxArray_real_T *X, const real_T C_data[],
     /*  Result will be <= M always */
     while ((int32_T)i < k) {
       j = (int32_T)muDoubleScalarFloor((i + (real_T)k) / 2.0);
-      if (X->data[j - 1] < x) {
+      if (X_data[j - 1] < x) {
         /*  [X(j,n) or X(j,1) as appropriate]  < xln */
         i = (real_T)j + 1.0;
       } else {
@@ -123,8 +109,9 @@ void ppc_val2(const emxArray_real_T *X, const real_T C_data[],
       /*  y(l,n) = C(O - d, i, n) * p; */
       *z = D_data[(int8_T)C_size[0] - 1];
     } else {
+      real_T t;
       /*  Evaluate this piece of the polynomial (see ppval.m) */
-      t = x - X->data[(int32_T)i - 2];
+      t = x - X_data[(int32_T)i - 2];
       /*  Switch to local coordinates */
       /*  Overload variable i, to speed with indexing */
       /*  subtract 1 from i so that 1 <= i <= M-1, and X(i) <= xln < X(i+1), */
@@ -132,31 +119,13 @@ void ppc_val2(const emxArray_real_T *X, const real_T C_data[],
       i = (i - 2.0) * (real_T)(int8_T)C_size[0];
       *y = 0.0;
       *z = 0.0;
-      b_i = (int8_T)C_size[0];
-      for (o = 0; o < b_i; o++) {
-        j = szC_idx_0 - o;
-        if (j - 1 < j) {
-          y_size_idx_1 = 0;
-        } else {
-          k = (int8_T)(j - 1) - (int8_T)j;
-          y_size_idx_1 = k + 1;
-          for (i1 = 0; i1 <= k; i1++) {
-            y_data[i1] = (int8_T)((int8_T)j + (int8_T)i1);
-          }
-        }
-        if (y_size_idx_1 == 0) {
-          p = 1.0;
-        } else {
-          p = y_data[0];
-          for (k = 2; k <= y_size_idx_1; k++) {
-            p *= (real_T)y_data[k - 1];
-          }
-        }
+      k = (int8_T)C_size[0];
+      for (o = 0; o < k; o++) {
         /*  Build integer multiplying the coefficient */
         j = (int32_T)(((real_T)o + 1.0) + i) - 1;
-        *y = t * *y + C_data[j] * p;
+        *y = t * *y + C_data[j];
         /*  y(l,n) = t * y(l,n) + C(o,i+1,n+1) * p; */
-        *z = t * *z + D_data[j] * p;
+        *z = t * *z + D_data[j];
       }
     }
   }

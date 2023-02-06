@@ -1,4 +1,4 @@
-function [dz, ehelSz, N] = omega_hel_Sz_matsolve(z, Z, SppZ, TppZ, Sz, Szz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS)
+function [dz, ehelSz, N] = omega_hel_Sz_matsolve(z, Z, SppZ, TppZ, Sz, Szz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, DXC, DYC, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS)
 
 %%
 STRAT = OPTS.STRAT;
@@ -183,14 +183,14 @@ if CHOLESKY
     rhs(1:N) = -ehelSz(m) .* sqrtAREA(m);
 
     % Normal Equations
-    rhs = mat' * rhs;
-    mat = mat' * mat;
+    rhs_s = mat' * rhs;
+    mat_s = mat' * mat;
 else
     rhs = zeros(N,1);
     rhs(1:N) = -ehelSz(m) .* sqrtAREA(m);
     % Normal Equations
-    rhs = mat' * rhs;
-    mat = mat' * mat;
+    rhs_s = mat' * rhs;
+    mat_s = mat' * mat;
 end
 
 %% New pinning
@@ -220,20 +220,32 @@ if TK > 0
     c = c(:,[goody(m), goodx(m)]);
     
     % uniform grid of unity
-    val = repelem([-1; 1], 1, num_eq);
+    if 1
+        flat = @(F) F(:);
+        sqrtDIST2on1_iJ = sqrt(DYG ./ DXC);
+        sqrtDIST1on2_Ij = sqrt(DXG ./ DYC);
+        d = [sqrtDIST2on1_iJ(m).', sqrtDIST1on2_Ij(m).'];
+        d = d([goody(m), goodx(m)]);
+        val = flat([-d; d]);
+    else
+        val = repelem([-1; 1], 1, num_eq);
+    end
     tik = sparse(r, c, val, num_eq, N);
     
     % Apply regularization.  Note tik' * tik is a Laplacian.  Could build that directly...
-    mat = mat + TK * (tik' * tik);
+    mat_s = mat_s + TK * (tik' * tik);
     % Note that adding Tikhonov makes pinning not quite perfect.
     % In one test, the solution drifted 6.36cm at ref cast...  current solution is PIN_RIGID
 end
 
 %% solution
+LSQLIN = OPTS.LSQLIN;
 if CHOLESKY
-    sol = mat \ rhs;
+    sol = mat_s \ rhs_s;
+elseif LSQLIN
+    sol = nonzero_mean_brent_lsqlin(mat_s, rhs_s, mr, pinval);
 else
-    sol = nonzero_mean_brent_lsqlin(mat, rhs, mr, pinval);
+    sol = nonzero_mean_brent_quadprog(mat_s, -rhs' * mat, mr, pinval);
 end
 
 dz = zeros(ni, nj);

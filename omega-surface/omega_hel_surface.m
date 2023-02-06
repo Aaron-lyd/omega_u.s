@@ -177,9 +177,9 @@ ni = OPTS.nx; nj = OPTS.ny;
 
 %% Grid information
 DXC = OPTS.DXCvec + zeros(OPTS.nx, OPTS.ny); %dx
-DXG = OPTS.DXGvec + zeros(OPTS.nx, OPTS.ny);
+DXG = OPTS.DXGvec + zeros(OPTS.nx, OPTS.ny); %dxT
 DYC = OPTS.DYCsc  + zeros(OPTS.nx, OPTS.ny); %dy
-DYG = OPTS.DYGsc  + zeros(OPTS.nx, OPTS.ny);
+DYG = OPTS.DYGsc  + zeros(OPTS.nx, OPTS.ny); %dyT
 RAC = OPTS.RACvec + zeros(OPTS.nx, OPTS.ny);
 RAX = DXC .* DYG; % area on (i-1/2, j), u cell
 RAY = DXG .* DYC; % area on (i, j-1/2), v cell
@@ -268,7 +268,7 @@ for iter = 1 : n_iter
   %% Matrix
   mode = OPTS.MODE;
   if     mode == 1 % omega_hel
-      [dz, ehel, N] = omega_hel_matsolve(z, Z, SppZ, TppZ, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
+      [dz, ehel, N] = omega_hel_matsolve(z, Z, SppZ, TppZ, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, DXC, DYC, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
   elseif mode == 2 % omega_s
       [dz, N]       = omega_s_matsolve(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY, sx, sy, dzi, dzj, i0, j0, I0, A4, OPTS);
   elseif mode == 3 % omega_1.5
@@ -282,11 +282,11 @@ for iter = 1 : n_iter
   elseif mode == 7 % omega_hel combines with omega_1.5
       [dz,ehelx,ehely, ehel, N] = omega_hel1p5_matsolve(z, Z, SppZ, TppZ, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
   elseif mode == 8 % omega_hel combines with omega_s2xy
-      [dz,s2x,s2y, ehel, N] = omega_hels2xy_matsolve(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY,  u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
+      [dz,s2x,s2y, ehel, N] = omega_hels2xy_matsolve(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY,  u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, DXC, DYC, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
   elseif mode == 9 % omega_hel weighted by Tz
-      [dz, ehelTz, N] = omega_hel_Tz_matsolve(z, Z, SppZ, TppZ, Tz, Tzz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
+      [dz, ehelTz, N] = omega_hel_Tz_matsolve(z, Z, SppZ, TppZ, Tz, Tzz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, DXC, DYC, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
   elseif mode == 10 % omega_hel weighted by Sz
-      [dz, ehelSz, N] = omega_hel_Sz_matsolve(z, Z, SppZ, TppZ, Sz, Szz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
+      [dz, ehelSz, N] = omega_hel_Sz_matsolve(z, Z, SppZ, TppZ, Sz, Szz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, DXC, DYC, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
   elseif mode == 11 % omega_s_lsqr
       [dz, N]       = omega_s_matsolve_lsqlin(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY, sx, sy, dzi, dzj, i0, j0, I0, A4, OPTS);
   end
@@ -320,7 +320,7 @@ for iter = 1 : n_iter
   elseif mode == 10
       d.ehelSz_rms(iter) = root_mean_square(ehelSz(:));
   end
-  d.dz_rms(iter) = rms(dz(:));
+  d.dz_rms(iter) = nanrms(abs(dz(:)));
   d.sx_rms(iter) = nanrms(sx(:));
   d.sy_rms(iter) = nanrms(sy(:));
   d.num_casts(iter) = N;

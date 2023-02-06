@@ -113,7 +113,9 @@ static void emlrt_marshallIn(const mxArray *Sppc, const char_T *identifier,
 
 static void emlrt_marshallOut(const emxArray_real_T *u, const mxArray *y)
 {
-  emlrtMxSetData((mxArray *)y, &u->data[0]);
+  const real_T *u_data;
+  u_data = u->data;
+  emlrtMxSetData((mxArray *)y, (void *)&u_data[0]);
   emlrtSetDimensions((mxArray *)y, &u->size[0], 2);
 }
 
@@ -154,9 +156,8 @@ static void i_emlrt_marshallIn(const mxArray *src,
   int32_T iv[4];
   int32_T i;
   const boolean_T bv[4] = {true, true, true, true};
-  emlrtCheckVsBuiltInR2012b(emlrtRootTLSGlobal, msgId, src,
-                            (const char_T *)"double", false, 4U,
-                            (void *)&dims[0], &bv[0], &iv[0]);
+  emlrtCheckVsBuiltInR2012b(emlrtRootTLSGlobal, msgId, src, "double", false, 4U,
+                            (const void *)&dims[0], &bv[0], &iv[0]);
   ret->allocatedSize = iv[0] * iv[1] * iv[2] * iv[3];
   i = ret->size[0] * ret->size[1] * ret->size[2] * ret->size[3];
   ret->size[0] = iv[0];
@@ -177,9 +178,8 @@ static void j_emlrt_marshallIn(const mxArray *src,
   int32_T iv[3];
   int32_T i;
   const boolean_T bv[3] = {true, true, true};
-  emlrtCheckVsBuiltInR2012b(emlrtRootTLSGlobal, msgId, src,
-                            (const char_T *)"double", false, 3U,
-                            (void *)&dims[0], &bv[0], &iv[0]);
+  emlrtCheckVsBuiltInR2012b(emlrtRootTLSGlobal, msgId, src, "double", false, 3U,
+                            (const void *)&dims[0], &bv[0], &iv[0]);
   ret->allocatedSize = iv[0] * iv[1] * iv[2];
   i = ret->size[0] * ret->size[1] * ret->size[2];
   ret->size[0] = iv[0];
@@ -199,9 +199,8 @@ static void k_emlrt_marshallIn(const mxArray *src,
   int32_T iv[2];
   int32_T i;
   const boolean_T bv[2] = {true, true};
-  emlrtCheckVsBuiltInR2012b(emlrtRootTLSGlobal, msgId, src,
-                            (const char_T *)"double", false, 2U,
-                            (void *)&dims[0], &bv[0], &iv[0]);
+  emlrtCheckVsBuiltInR2012b(emlrtRootTLSGlobal, msgId, src, "double", false, 2U,
+                            (const void *)&dims[0], &bv[0], &iv[0]);
   ret->allocatedSize = iv[0] * iv[1];
   i = ret->size[0] * ret->size[1];
   ret->size[0] = iv[0];
@@ -217,8 +216,8 @@ static real_T l_emlrt_marshallIn(const mxArray *src,
 {
   static const int32_T dims = 0;
   real_T ret;
-  emlrtCheckBuiltInR2012b(emlrtRootTLSGlobal, msgId, src,
-                          (const char_T *)"double", false, 0U, (void *)&dims);
+  emlrtCheckBuiltInR2012b(emlrtRootTLSGlobal, msgId, src, "double", false, 0U,
+                          (const void *)&dims);
   ret = *(real_T *)emlrtMxGetData(src);
   emlrtDestroyArray(&src);
   return ret;
@@ -240,47 +239,47 @@ void omega_vertsolve_api(const mxArray *const prhs[9], int32_T nlhs,
   const mxArray *prhs_copy_idx_6;
   real_T tolp;
   emlrtHeapReferenceStackEnterFcnR2012b(emlrtRootTLSGlobal);
-  emxInit_real_T(&Sppc, 4, true);
-  emxInit_real_T(&Tppc, 4, true);
-  emxInit_real_T(&P, 3, true);
-  emxInit_real_T(&BotK, 2, true);
-  emxInit_real_T(&s, 2, true);
-  emxInit_real_T(&t, 2, true);
-  emxInit_real_T(&p, 2, true);
-  emxInit_real_T(&phi, 2, true);
   prhs_copy_idx_4 = emlrtProtectR2012b(prhs[4], 4, true, -1);
   prhs_copy_idx_5 = emlrtProtectR2012b(prhs[5], 5, true, -1);
   prhs_copy_idx_6 = emlrtProtectR2012b(prhs[6], 6, true, -1);
   /* Marshall function inputs */
+  emxInit_real_T(&Sppc, 4);
   Sppc->canFreeData = false;
   emlrt_marshallIn(emlrtAlias(prhs[0]), "Sppc", Sppc);
+  emxInit_real_T(&Tppc, 4);
   Tppc->canFreeData = false;
   emlrt_marshallIn(emlrtAlias(prhs[1]), "Tppc", Tppc);
+  emxInit_real_T(&P, 3);
   P->canFreeData = false;
   c_emlrt_marshallIn(emlrtAlias(prhs[2]), "P", P);
+  emxInit_real_T(&BotK, 2);
   BotK->canFreeData = false;
   e_emlrt_marshallIn(emlrtAlias(prhs[3]), "BotK", BotK);
+  emxInit_real_T(&s, 2);
   s->canFreeData = false;
   e_emlrt_marshallIn(emlrtAlias(prhs_copy_idx_4), "s", s);
+  emxInit_real_T(&t, 2);
   t->canFreeData = false;
   e_emlrt_marshallIn(emlrtAlias(prhs_copy_idx_5), "t", t);
+  emxInit_real_T(&p, 2);
   p->canFreeData = false;
   e_emlrt_marshallIn(emlrtAlias(prhs_copy_idx_6), "p", p);
   tolp = g_emlrt_marshallIn(emlrtAliasP(prhs[7]), "tolp");
+  emxInit_real_T(&phi, 2);
   phi->canFreeData = false;
   e_emlrt_marshallIn(emlrtAlias(prhs[8]), "phi", phi);
   /* Invoke the target function */
   omega_vertsolve(Sppc, Tppc, P, BotK, s, t, p, tolp, phi);
-  /* Marshall function outputs */
-  p->canFreeData = false;
-  emlrt_marshallOut(p, prhs_copy_idx_6);
-  plhs[0] = prhs_copy_idx_6;
   emxFree_real_T(&phi);
-  emxFree_real_T(&p);
   emxFree_real_T(&BotK);
   emxFree_real_T(&P);
   emxFree_real_T(&Tppc);
   emxFree_real_T(&Sppc);
+  /* Marshall function outputs */
+  p->canFreeData = false;
+  emlrt_marshallOut(p, prhs_copy_idx_6);
+  emxFree_real_T(&p);
+  plhs[0] = prhs_copy_idx_6;
   if (nlhs > 1) {
     s->canFreeData = false;
     emlrt_marshallOut(s, prhs_copy_idx_4);

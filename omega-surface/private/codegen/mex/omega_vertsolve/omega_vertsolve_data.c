@@ -19,7 +19,7 @@ emlrtCTX emlrtRootTLSGlobal = NULL;
 emlrtContext emlrtContextGlobal = {
     true,                                                 /* bFirstTime */
     false,                                                /* bInitialized */
-    131610U,                                              /* fVersionInfo */
+    131627U,                                              /* fVersionInfo */
     NULL,                                                 /* fErrorFunction */
     "omega_vertsolve",                                    /* fFunctionName */
     NULL,                                                 /* fRTCallStack */

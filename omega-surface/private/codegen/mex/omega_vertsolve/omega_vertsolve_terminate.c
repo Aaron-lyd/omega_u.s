@@ -20,14 +20,12 @@ void omega_vertsolve_atexit(void)
 {
   mexFunctionCreateRootTLS();
   emlrtEnterRtStackR2012b(emlrtRootTLSGlobal);
-  emlrtLeaveRtStackR2012b(emlrtRootTLSGlobal);
   emlrtDestroyRootTLS(&emlrtRootTLSGlobal);
   emlrtExitTimeCleanup(&emlrtContextGlobal);
 }
 
 void omega_vertsolve_terminate(void)
 {
-  emlrtLeaveRtStackR2012b(emlrtRootTLSGlobal);
   emlrtDestroyRootTLS(&emlrtRootTLSGlobal);
 }
 

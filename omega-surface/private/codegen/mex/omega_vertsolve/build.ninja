@@ -1,24 +1,26 @@
-# CompilerName=clang
+# CompilerName=mingw64
 # Mode=optim
 ninja_required_version = 1.3
 
 # Basic folders
 root = .
-builddir = $root/build/maci64
-matlabdir = /Applications/MATLAB_R2021a.app
-startdir = /Users/yandonglang/Library/CloudStorage/OneDrive-UNSW/1. YL_PHD/10. omega_hel code/omega_u.s/omega-surface/private
+builddir = $root/build/win64
+matlabdir = C:/Program Files/MATLAB/R2022b
+startdir = C:/Users/z5233717/OneDrive - UNSW/1. YL_PHD/10. omega_hel code/omega_u.s/omega-surface/private
 
 # Toolchain information
-cc = /usr/bin/xcrun -sdk macosx10.15 clang
-cxx = /usr/bin/xcrun -sdk macosx10.15 clang++
-linker = /usr/bin/xcrun -sdk macosx10.15 clang
-linkerxx = /usr/bin/xcrun -sdk macosx10.15 clang++
+cc = C:\ProgramData\MATLAB\SupportPackages\R2022b\3P.instrset\mingw_w64.instrset\bin\gcc
+cxx = C:\ProgramData\MATLAB\SupportPackages\R2022b\3P.instrset\mingw_w64.instrset\bin\g++
+linker = C:\ProgramData\MATLAB\SupportPackages\R2022b\3P.instrset\mingw_w64.instrset\bin\gcc
+linkerxx = C:\ProgramData\MATLAB\SupportPackages\R2022b\3P.instrset\mingw_w64.instrset\bin\g++
 
-cflags =  -fno-common -arch x86_64 -mmacosx-version-min=10.14 -fexceptions -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I "$root" -I "$startdir" -I "$root/interface" -I "$matlabdir/extern/include" -I "." -DMODEL=omega_vertsolve_mex -c 
+cflags =  -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I "C:\Users\z5233717\OneDrive - UNSW\1. YL_PHD\10. omega_hel code\omega_u.s\omega-surface\private\codegen\mex\omega_vertsolve" -I "C:\Users\z5233717\OneDrive - UNSW\1. YL_PHD\10. omega_hel code\omega_u.s\omega-surface\private" -I "C:\Users\z5233717\OneDrive - UNSW\1. YL_PHD\10. omega_hel code\omega_u.s\omega-surface\private\codegen\mex\omega_vertsolve\interface" -I "C:\Program Files\MATLAB\R2022b\extern\include" -I "." -DMODEL=omega_vertsolve_mex -D__USE_MINGW_ANSI_STDIO=1  
 
-cxxflags =  -fno-common -arch x86_64 -mmacosx-version-min=10.14 -fexceptions -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -fobjc-arc -std=c++11 -stdlib=libc++ -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I "$root" -I "$startdir" -I "$root/interface" -I "$matlabdir/extern/include" -I "." -DMODEL=omega_vertsolve_mex -c 
+cxxflags =  -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I "C:\Users\z5233717\OneDrive - UNSW\1. YL_PHD\10. omega_hel code\omega_u.s\omega-surface\private\codegen\mex\omega_vertsolve" -I "C:\Users\z5233717\OneDrive - UNSW\1. YL_PHD\10. omega_hel code\omega_u.s\omega-surface\private" -I "C:\Users\z5233717\OneDrive - UNSW\1. YL_PHD\10. omega_hel code\omega_u.s\omega-surface\private\codegen\mex\omega_vertsolve\interface" -I "C:\Program Files\MATLAB\R2022b\extern\include" -I "." -DMODEL=omega_vertsolve_mex -D__USE_MINGW_ANSI_STDIO=1  
 
-ldflags =  -Wl,-twolevel_namespace -undefined error -arch x86_64 -mmacosx-version-min=10.14 -Wl,-syslibroot,/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -bundle   -L"$matlabdir/bin/maci64" -lmx -lmex -lmat -lc++  -Wl,-rpath,@loader_path -o omega_vertsolve_mex.mexmaci64 -lemlrt -lcovrt -lut -lmwmathutil  -Wl,-exported_symbols_list,omega_vertsolve_mex.map
+ldflags =  -m64 -Wl,--no-undefined -shared -static -L"C:\Program Files\MATLAB\R2022b\extern\lib\win64\mingw64" -llibmx -llibmex -llibmat -lm -llibmwlapack -llibmwblas -o "omega_vertsolve_mex.mexw64" -llibemlrt -llibcovrt -llibut -llibmwmathutil  omega_vertsolve_mex.def
+
+linkobjs = 
 
 # Build Rules
 rule cc
@@ -28,10 +30,12 @@ rule cxx
     command = $cxx $cxxflags $in -o $out
 
 rule link
-    command = $linker $in $ldflags
+    command = $linker @$out.rsp $linkobjs $ldflags
+    rspfile = $out.rsp
+    rspfile_content = $in
 
 rule linkxx
-    command = $linkerxx $in $ldflags
+    command = $linkerxx $in $linkobjs $ldflags
 
 # Build
 build $builddir/omega_vertsolve_data.o : cc $root/omega_vertsolve_data.c
@@ -47,4 +51,4 @@ build $builddir/_coder_omega_vertsolve_info.o : cc $root/interface/_coder_omega_
 build $builddir/c_mexapi_version.o : cc $matlabdir/extern/version/c_mexapi_version.c
 
 # Link
-build $root/omega_vertsolve_mex.mexmaci64 : link $builddir/omega_vertsolve_data.o $builddir/rt_nonfinite.o $builddir/omega_vertsolve_initialize.o $builddir/omega_vertsolve_terminate.o $builddir/ppc_val2.o $builddir/_coder_omega_vertsolve_api.o $builddir/_coder_omega_vertsolve_mex.o $builddir/omega_vertsolve.o $builddir/omega_vertsolve_emxutil.o $builddir/_coder_omega_vertsolve_info.o $builddir/c_mexapi_version.o 
+build $root\omega_vertsolve_mex.mexw64 : link $builddir/omega_vertsolve_data.o $builddir/rt_nonfinite.o $builddir/omega_vertsolve_initialize.o $builddir/omega_vertsolve_terminate.o $builddir/ppc_val2.o $builddir/_coder_omega_vertsolve_api.o $builddir/_coder_omega_vertsolve_mex.o $builddir/omega_vertsolve.o $builddir/omega_vertsolve_emxutil.o $builddir/_coder_omega_vertsolve_info.o $builddir/c_mexapi_version.o 

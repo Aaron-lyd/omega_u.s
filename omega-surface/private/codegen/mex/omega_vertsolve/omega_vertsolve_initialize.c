@@ -15,14 +15,23 @@
 #include "omega_vertsolve_data.h"
 #include "rt_nonfinite.h"
 
+/* Function Declarations */
+static void omega_vertsolve_once(void);
+
 /* Function Definitions */
-void omega_vertsolve_initialize(void)
+static void omega_vertsolve_once(void)
 {
   mex_InitInfAndNan();
+}
+
+void omega_vertsolve_initialize(void)
+{
   mexFunctionCreateRootTLS();
   emlrtClearAllocCountR2012b(emlrtRootTLSGlobal, false, 0U, NULL);
   emlrtEnterRtStackR2012b(emlrtRootTLSGlobal);
-  emlrtFirstTimeR2012b(emlrtRootTLSGlobal);
+  if (emlrtFirstTimeR2012b(emlrtRootTLSGlobal)) {
+    omega_vertsolve_once();
+  }
 }
 
 /* End of code generation (omega_vertsolve_initialize.c) */

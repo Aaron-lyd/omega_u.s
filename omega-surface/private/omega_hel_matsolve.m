@@ -1,6 +1,5 @@
-function [dz, ehel, N] = omega_hel_matsolve(z, Z, SppZ, TppZ, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS)
+function [dz, ehel, N] = omega_hel_matsolve(z, Z, SppZ, TppZ, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, DXC, DYC, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS)
 % OMEGA_HEL_MATSOLVE  Build & solve the sparse matrix for omega_hel surfaces
-
 
 %%
 STRAT = OPTS.STRAT;
@@ -165,14 +164,14 @@ if CHOLESKY
     rhs(1:N) = -ehel(m) .* sqrtAREA(m);
 
     % Normal Equations
-    rhs = mat' * rhs;
-    mat = mat' * mat;
+    rhs_s = mat' * rhs;
+    mat_s = mat' * mat;
 else
     rhs = zeros(N,1);
     rhs(1:N) = -ehel(m) .* sqrtAREA(m);
     % Normal Equations
-    rhs = mat' * rhs;
-    mat = mat' * mat;
+    rhs_s = mat' * rhs;
+    mat_s = mat' * mat;
 end
 
 % condition_numer = condest(mat);
@@ -195,9 +194,9 @@ end
 
 %% Levenberg-Marquardt
 if LM > 0
-    mat_rms = rms(mat(mat ~= 0));
+    mat_rms = rms(mat_s(mat_s ~= 0));
     assert(isfinite(mat_rms), 'matrix has some NaN''s; cannot proceed.');
-    mat = mat + (LM * mat_rms) * speye(N);
+    mat_s = mat_s + (LM * mat_rms) * speye(N);
 end
 
 %% TK
@@ -210,11 +209,20 @@ if TK > 0
     c = c(:,[goody(m), goodx(m)]);
     
     % uniform grid of unity
-    val = repelem([-1; 1], 1, num_eq);
+    if 1
+        flat = @(F) F(:);
+        sqrtDIST2on1_iJ = sqrt(DYG ./ DXC);
+        sqrtDIST1on2_Ij = sqrt(DXG ./ DYC);
+        d = [sqrtDIST2on1_iJ(m).', sqrtDIST1on2_Ij(m).'];
+        d = d([goody(m), goodx(m)]);
+        val = flat([-d; d]);
+    else
+        val = repelem([-1; 1], 1, num_eq);
+    end
     tik = sparse(r, c, val, num_eq, N);
-
+    
     % Apply regularization.  Note tik' * tik is a Laplacian.  Could build that directly...
-    mat = mat + TK * (tik' * tik);
+    mat_s = mat_s + TK * (tik' * tik);
     % Note that adding Tikhonov makes pinning not quite perfect.
     % In one test, the solution drifted 6.36cm at ref cast...  current solution is PIN_RIGID
 end
@@ -224,13 +232,18 @@ end
 % alpha = max(sum(abs(mat_N),2)./diag(mat_N))-2;
 % L = ichol(mat_N, struct('type','ict','droptol',1e-3,'diagcomp',alpha));
 % sol = pcg(mat_N, rhs_N, 1e-7, 200, L, L');
+
+LSQLIN = OPTS.LSQLIN;
 if CHOLESKY
-    sol = mat \ rhs;
+    sol = mat_s \ rhs_s;
+elseif LSQLIN
+    sol = nonzero_mean_brent_lsqlin(mat_s, rhs_s, mr, pinval);
 else
-    sol = nonzero_mean_brent_lsqlin(mat, rhs, mr, pinval);
+    sol = nonzero_mean_brent_quadprog(mat_s, -rhs' * mat, mr, pinval);
 end
 
-dz = zeros(ni, nj);
+% dz = zeros(ni, nj);
+dz = nan(ni, nj);
 dz(m) = sol;
 
 end

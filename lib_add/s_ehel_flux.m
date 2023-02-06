@@ -171,13 +171,35 @@ e_hel_u = u.*sx;
 % Calculate e^hel on (i, j-1/2):
 e_hel_v = v.*sy;
 
-e_hel_u_rms = e_hel_u - nanmean(e_hel_u(:));
-good = ~isnan(e_hel_u_rms);
-e_hel_u_rms = rms(e_hel_u_rms(good));
+goodux = ~isnan(sx) & ~isnan(u);
+gooduy = ~isnan(sy) & ~isnan(v);
 
-e_hel_v_rms = e_hel_v - nanmean(e_hel_v(:));
-good = ~isnan(e_hel_v_rms);
-e_hel_v_rms = rms(e_hel_v_rms(good));
+if isscalar(OPT.DXCvec)
+    AreaX = OPT.DXCvec .* OPT.DYGsc;
+    AreaY = OPT.DXGvec .* OPT.DYCsc;
+    e_hel_u_grid2 = e_hel_u(goodux).^2 .* AreaX;
+    e_hel_v_grid2 = e_hel_v(gooduy).^2 .* AreaY;
+else
+    
+    AreaX = repmat((OPT.DXCvec .* OPT.DYGsc), [nx 1]);
+    AreaY = repmat((OPT.DXGvec .* OPT.DYCsc), [nx 1]);
+    
+    e_hel_u_grid2 = e_hel_u(goodux).^2 .* AreaX(goodux);
+    e_hel_v_grid2 = e_hel_v(gooduy).^2 .* AreaY(gooduy);
+end
+
+e_hel_u_rms = sqrt(nansum(e_hel_u_grid2(:))/nansum(AreaX(:)));
+e_hel_v_rms = sqrt(nansum(e_hel_v_grid2(:))/nansum(AreaY(:)));
+
+% e_hel_u_rms = e_hel_u - nanmean(e_hel_u(:));
+% good = ~isnan(e_hel_u_rms);
+% e_hel_u_rms = rms(e_hel_u_rms(good));
+% 
+% e_hel_v_rms = e_hel_v - nanmean(e_hel_v(:));
+% good = ~isnan(e_hel_v_rms);
+% e_hel_v_rms = rms(e_hel_v_rms(good));
+
+
 
 mode_hel = OPT.MODEHEL;
 if mode_hel == 1 % divergence method to calculate ehel
@@ -185,6 +207,17 @@ if mode_hel == 1 % divergence method to calculate ehel
     ehelx = u .* sx .* (OPT.DXCvec .* OPT.DYGsc);
     ehely = v .* sy .* (OPT.DXGvec .* OPT.DYCsc);
     e_hel = (ehelx + ip1(ehelx) + ehely + jp1(ehely)) ./ (2 * OPT.RACvec);
+    
+    good_ehel = ~isnan(e_hel);
+    if isscalar(OPT.DXCvec)
+        Area = OPT.RACvec;
+        e_hel_grid2 = e_hel(good_ehel).^2 .* Area;
+    else        
+        Area = repmat(OPT.RACvec, [nx 1]);       
+        e_hel_grid2 = e_hel(good_ehel).^2 .* Area(good_ehel);
+    end
+    
+    e_hel_rms = sqrt(nansum(e_hel_grid2(:))/nansum(Area(:)));
     
     flux = e_hel .* OPT.RACvec;
     flux = nansum(flux(:));
@@ -232,8 +265,8 @@ else
     flux_v = nansum(flux_v(:));
     
     flux = flux_u + flux_v;
-
-
+    
+    
     flux = flux_u + flux_v;
 end
 

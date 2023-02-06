@@ -32,8 +32,8 @@ void mexFunction(int32_T nlhs, mxArray *plhs[], int32_T nrhs,
 
 emlrtCTX mexFunctionCreateRootTLS(void)
 {
-  emlrtCreateRootTLSR2021a(&emlrtRootTLSGlobal, &emlrtContextGlobal, NULL, 1,
-                           NULL);
+  emlrtCreateRootTLSR2022a(&emlrtRootTLSGlobal, &emlrtContextGlobal, NULL, 1,
+                           NULL, "windows-1252", true);
   return emlrtRootTLSGlobal;
 }
 
@@ -41,7 +41,7 @@ void unsafe_omega_vertsolve_mexFunction(int32_T nlhs, mxArray *plhs[3],
                                         int32_T nrhs, const mxArray *prhs[9])
 {
   const mxArray *outputs[3];
-  int32_T b_nlhs;
+  int32_T i;
   /* Check for proper number of arguments. */
   if (nrhs != 9) {
     emlrtErrMsgIdAndTxt(emlrtRootTLSGlobal, "EMLRT:runTime:WrongNumberOfInputs",
@@ -56,11 +56,11 @@ void unsafe_omega_vertsolve_mexFunction(int32_T nlhs, mxArray *plhs[3],
   omega_vertsolve_api(prhs, nlhs, outputs);
   /* Copy over outputs to the caller. */
   if (nlhs < 1) {
-    b_nlhs = 1;
+    i = 1;
   } else {
-    b_nlhs = nlhs;
+    i = nlhs;
   }
-  emlrtReturnArrays(b_nlhs, &plhs[0], &outputs[0]);
+  emlrtReturnArrays(i, &plhs[0], &outputs[0]);
 }
 
 /* End of code generation (_coder_omega_vertsolve_mex.c) */

@@ -26,7 +26,6 @@ void emxEnsureCapacity_real_T(emxArray_real_T *emxArray, int32_T oldNumel);
 
 void emxFree_real_T(emxArray_real_T **pEmxArray);
 
-void emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions,
-                    boolean_T doPush);
+void emxInit_real_T(emxArray_real_T **pEmxArray, int32_T numDimensions);
 
 /* End of code generation (omega_vertsolve_emxutil.h) */
