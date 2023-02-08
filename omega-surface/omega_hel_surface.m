@@ -95,45 +95,26 @@ function [zns, sns, tns, esp, d] = omega_hel_surface(S, T, Z, U, V, z, OPTS)
 %       identifier as returned by fopen() to write to a file. Default: 1.
 %   FIGS_SHOW [scalar]: true to show figures of specific volume adjustment
 %       during computation. Default: false.
-%   FINAL_ROW_VALUES [scalar]: value with which to fill the final row of
-%       the sparse matrix for the purpose of selecting a unique solution
-%       for th density perturbation. This value doesn't matter in theory,
-%       but in practice, excessively large or small values may degrade the
-%       numerical solution.  Values in the range of 1e-4 to 1 were tested
-%       on 1x1deg OCCA data, and all work well. Default: 1e-2.
 %   ITER_MAX [1, 1]: maximum number of iterations. Default: 10
-%   ITER_START_WETTING [scalar]: Start wetting on iterations that are
-%       >= ITER_START_WETTING. To disable wetting, set to +inf. Default: 1.
-%   ITER_STOP_WETTING [scalar]: Do wetting for iterations that are
-%       <= ITER_STOP_WETTING. To disable wetting, set to 0. Default: 5.
 %   INTERPFN [function handle]: vertical interpolation function, used to
 %       evaluate Sppc and Tppc if those are not provided.  Default:
 %       INTERPFN = @ppc_linterp.
 %   ML []: do not remove the mixed layer (default)
 %   ML [struct]: calculate the mixed layer using these parameters in mixed_layer().
 %   ML [ni, nj]: use a pre-computed mixed layer pressure [dbar] or depth [m]
-%   Sppc [O, nk-1, ni, nj]: Coefficients for piecewise polynomials, whose
-%       knots are at P, that interpolate S as a function of P in each water
-%       column.  E.g. Sppc = ppc_linterp(P, S);
-%   Tppc [O, nk-1, ni, nj]: Coefficients for piecewise polynomials, whose
-%       knots are at P, that interpolate T as a function of P in each water
-%       column.  E.g. Tppc = ppc_linterp(P, T);
-%   TOL_LRPD_L1 [scalar]: Error tolerance in Locally Referenced Potential Density [kg m^-3].
-%       Iterations stop when the Mean Absolute Value of the LRPD change of the surface
-%       is below this value. Even if eos gives specific volume, specify
-%       this with units of density; it will be converted. Set to 0 to
-%       ignore this stopping criterion.
-%       Default: 10^-7 kg m^-3 (chosen to give an uncertainty in pressure
-%       of roughly +/- 0.01 dbar.)
-%   TOL_P_CHANGE_L2 [scalar]: Error tolerance in change of pressure [dbar].
-%       Iterations stop when the root-mean-square of the change in pressure on the
-%       surface is below this value.  Set to 0 to ignore this stopping
-%       criterion.
-%       Default: inf
-%   TOL_LSQR_REL [scalar]: Relative tolerance for LSQR. Default: 10^-6.
-%   VERBOSE [scalar]: 0 for no output; 1 for summary of each iteration;
-%                     2 for detailed information on each iteration.
-%                     Default: 1.
+%   
+%   nx [1, 1]: size of ni.
+%   ny [1, 1]: size of nj.
+%   DXCvec : dx
+%   DYCsc : dy
+%   DXGvec = g.DXGvec;
+%   DYGsc = g.DYGsc;
+%   RACvec : area of the grid in tracer grid
+%   XCvec = g.XCvec;
+%   YCvec = g.YCvec;
+%   DAMP: damping rate of the iterative update of the height of the surface 
+%   x0: latitude of the reference cast
+%   y0: longitude of the reference cast
 %
 %
 % --- References:

@@ -79,7 +79,7 @@ pBB = dpdz_bsq * ZB;  % Get Boussinesq pressure (third argument to EOS) from Dep
 
 tic
 % gn = eos80_legacy_gamma_n_STP_GJS_no_extrapolation(SB, tB, pB, longOCCAzxy, latOCCAzxy);
-gscvE = eos80_legacy_gamma_scv_STP_GJS_no_extrapolation(SB, tB, pBB, longOCCAzxy, latOCCAzxy);
+gscvE = gamma_scv(SB, tB, pBB, longOCCAzxy, latOCCAzxy);
 toc
 
 %% Neutral density surface
