@@ -107,8 +107,8 @@ function [zns, sns, tns, esp, d] = omega_hel_surface(S, T, Z, U, V, z, OPTS)
 %   ny [1, 1]: size of nj.
 %   DXCvec : distance between grid points (i,j) and (i-1,j), always called dx
 %   DYCsc : distance between  grid points (i,j) and (i,j-1), always called dy
-%   DXGvec : distance between grid points (i+1/2,j) and (i-1/2,j)
-%   DYGsc : distance between grid points (i,j+1/2) and (i,j-1/2)
+%   DXGvec : distance between grid points (i,j) and (i-1,j)
+%   DYGsc : distance between grid points (i,j) and (i-1,j)
 %   RACvec : area of the grid in tracer grid.
 %   XCvec : longitude on the T grid.
 %   YCvec : latitude on the T grid.

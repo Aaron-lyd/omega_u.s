@@ -78,7 +78,7 @@ dpdz_bsq = (g.grav * g.rho_c * 1e-4);
 pBB = dpdz_bsq * ZB;  % Get Boussinesq pressure (third argument to EOS) from Depth.
 
 tic
-% gn = eos80_legacy_gamma_n_STP_GJS_no_extrapolation(SB, tB, pB, longOCCAzxy, latOCCAzxy);
+% gn = gamma_n_2020(SB, tB, pB, longOCCAzxy, latOCCAzxy);
 gscvE = gamma_scv(SB, tB, pBB, longOCCAzxy, latOCCAzxy);
 toc
 
