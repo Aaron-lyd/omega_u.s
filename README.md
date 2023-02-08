@@ -19,6 +19,30 @@ The specific volume anomaly (Montgomery 1937) is the difference between the  in-
 
 Omega surfaces (Klocker et al., 2009;  Stanley et al. 2021) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error. 
 
+#### Omega_s surfaces
+
+The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the slope error. 
+
+#### Omega_s^2 surfaces
+
+The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the fictitious diapyncal diffusivity. 
+
+#### Omega_u.s surfaces
+
+The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the square of the spurious diasurface velocity.
+
+#### Omega_u.sTz surfaces
+
+The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the square of the spurious diasurface velocity times the veritial gradient of the temperature.
+
+#### Omega_u.sSz surfaces
+
+The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the square of the spurious diasurface velocity times the veritial gradient of the salinity.
+
+#### Omega_u.s+s^2 surfaces
+
+The combination of Omega_u.s and Omega_s^2.
+
 #### Topobaric surfaces
 
 Topobaric surfaces (Stanley 2019a) are approximately neutral surfaces that are highly accurate, fast to compute, and possess an exact geostrophic streamfunction (though it is ill-defined, as it is for truly neutral surfaces). Topobaric surfaces are built from a multivalued functional relationship between the in-situ density and the pressure that exists on a truly neutral surface, or on a topobaric surface. The single-valued branches of this function are valid on regions that are determined by the Reeb graph of the pressure on the surface. Topobaric surfaces are constructed from an initial approximately neutral surface of any quality using an iterative procedure.  Each iteration calculates the Reeb graph, empirically fits the density to the pressure using simple functions, then updates the surface such that the density on the surface matches that given by the these simple functions. 
@@ -43,8 +67,9 @@ McDougall (1989) proved that an exact GSF does exist, at least locally, on a tru
 ## Contents:
 - `./fex/                             `- software from the MATLAB file exchange
 - `./lib/                             `- libraries (e.g. surface analysis, equations of state, geostrophic streamfunctions)
+- `./lib_add/                         `- additional libraries
 - `./run/                             `- example scripts
-- `./omega-surface/                   `- create omega surfaces
+- `./omega-surface/                   `- create omega series of surfaces
 - `./potential-density-surface/       `- create potential density surfaces
 - `./specific-volume-anomaly-surface/ `- create specific volume anomaly surfaces
 - `./topobaric-surface/               `- create topobaric surfaces, modified topobaric surfaces, and orthobaric surfaces
@@ -126,7 +151,7 @@ Zhang, H.-M., Hogg, N.G., 1992. Circulation and water mass balance in the Brazil
 ## Copyright:
 MIT License
 
-Copyright (c) 2021 Geoff Stanley
+Copyright (c) 2023 Yandong Lang and 2021 Geoff Stanley
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:  
 
@@ -134,8 +159,8 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  
 
-Author(s) : Geoff Stanley
+Author(s) : Yandong Lang and Geoff Stanley
 
-Email     : g.stanley@unsw.edu.au
+Email     : yandong.lang@unsw.edu.au; gstanley@uvic.ca
 
-Email     : geoffstanley@gmail.com
+Email     : aaronlangyandongh@gmail.com; geoffstanley@gmail.com
