@@ -1,5 +1,16 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4615747.svg)](https://doi.org/10.5281/zenodo.4615747)
 
+# Neutral density variables
+## Software for creating neutral density variables
+
+### gamma^SCV
+
+The pressure-invariant neutral density variable (Lang et al., 2020) which is created by using SCV (submesoscle coherent vortices) methods  to connect the observation bottle with th reference data.
+
+### gamma^n
+
+Neutral density based on Jackett and McDougall (1997).
+
 # Neutral Surfaces
 ## Software for approximately neutral surfaces and geostrophic streamfunctions
 
@@ -65,7 +76,9 @@ McDougall (1989) proved that an exact GSF does exist, at least locally, on a tru
 
 
 ## Contents:
+- `./GSW_3_06/                        `- GSW toolbox V3.6 based on TEOS-10
 - `./fex/                             `- software from the MATLAB file exchange
+- `./gamma/                           `- create gamma^SCV neutral density variables
 - `./lib/                             `- libraries (e.g. surface analysis, equations of state, geostrophic streamfunctions)
 - `./lib_add/                         `- additional libraries
 - `./run/                             `- example scripts
@@ -163,4 +176,4 @@ Author(s) : Yandong Lang and Geoff Stanley
 
 Email     : yandong.lang@unsw.edu.au; gstanley@uvic.ca
 
-Email     : aaronlangyandongh@gmail.com; geoffstanley@gmail.com
+Email     : aaronlangyandong@gmail.com; geoffstanley@gmail.com
