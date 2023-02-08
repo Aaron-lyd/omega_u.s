@@ -21,7 +21,27 @@ Omega surfaces (Klocker et al., 2009;  Stanley et al. 2021) are highly accurate 
 
 #### Omega_s surfaces
 
-Omega surfaces (Klocker et al., 2009;  Stanley et al. 2021) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error. 
+The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the slope error. 
+
+#### Omega_s^2 surfaces
+
+The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the fictitious diapyncal diffusivity. 
+
+#### Omega_u.s surfaces
+
+The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the square of the spurious diasurface velocity.
+
+#### Omega_u.sTz surfaces
+
+The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the square of the spurious diasurface velocity times the veritial gradient of the temperature.
+
+#### Omega_u.sSz surfaces
+
+The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the square of the spurious diasurface velocity times the veritial gradient of the salinity.
+
+#### Omega_u.s+s^2 surfaces
+
+The combination of Omega_u.s and Omega_s^2.
 
 #### Topobaric surfaces
 
