@@ -1,11 +1,4 @@
-function [gamma_n, gamma_error_lower, gamma_error_upper, SP_ntp, t_ntp, T_ntp, p_ntp,...
-          gamma_ntp1, gamma_ntp2, gamma_ntp3, gamma_ntp4,...
-          SP_ntp1, t_ntp1, T_ntp1, p_ntp1, SP_ntp2, t_ntp2, T_ntp2, p_ntp2,...
-          SP_ntp3, t_ntp3, T_ntp3, p_ntp3, SP_ntp4, t_ntp4, T_ntp4, p_ntp4] = eos80_legacy_gamma_n_STP_GJS_no_extrapolation(SP,t,p,long,lat)
-% Also output salinity, temperature, and pressure of the bottle where gamma_n is taken
-% Modification by Geoff Stanley
-% 13/05/2019.
-% Bug fix 7/6/2019: Eliminated usage of "if <not a scalar quantity>"
+function [gamma_n, gamma_error_lower, gamma_error_upper] = gamma_n_2020(SP,t,p,long,lat)
 
 % eos80_legacy_gamma_n                                      neutral density
 %==========================================================================

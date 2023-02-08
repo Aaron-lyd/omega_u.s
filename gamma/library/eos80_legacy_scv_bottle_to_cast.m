@@ -1,4 +1,4 @@
- function [SP_scv, t_scv, p_scv] = eos80_legacy_scv_bottle_to_cast(SP_bottle,t_bottle,p_bottle,SP,t,p)
+  function [SP_scv, t_scv, p_scv] = eos80_legacy_scv_bottle_to_cast(SP_bottle,t_bottle,p_bottle,SP,t,p)
 
 % eos80_legacy_scv_bottle_to_cast               Practical Salinity, in-situ 
 %                     temperature and pressure on a neighbouring cast using
