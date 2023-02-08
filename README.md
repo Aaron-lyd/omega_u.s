@@ -43,8 +43,9 @@ McDougall (1989) proved that an exact GSF does exist, at least locally, on a tru
 ## Contents:
 - `./fex/                             `- software from the MATLAB file exchange
 - `./lib/                             `- libraries (e.g. surface analysis, equations of state, geostrophic streamfunctions)
+- `./lib_add/                         `- additional libraries
 - `./run/                             `- example scripts
-- `./omega-surface/                   `- create omega surfaces
+- `./omega-surface/                   `- create omega series of surfaces
 - `./potential-density-surface/       `- create potential density surfaces
 - `./specific-volume-anomaly-surface/ `- create specific volume anomaly surfaces
 - `./topobaric-surface/               `- create topobaric surfaces, modified topobaric surfaces, and orthobaric surfaces
