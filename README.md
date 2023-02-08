@@ -176,4 +176,4 @@ Author(s) : Yandong Lang and Geoff Stanley
 
 Email     : yandong.lang@unsw.edu.au; gstanley@uvic.ca
 
-Email     : aaronlangyandongh@gmail.com; geoffstanley@gmail.com
+Email     : aaronlangyandong@gmail.com; geoffstanley@gmail.com
