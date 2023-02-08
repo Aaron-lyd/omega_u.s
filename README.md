@@ -19,6 +19,10 @@ The specific volume anomaly (Montgomery 1937) is the difference between the  in-
 
 Omega surfaces (Klocker et al., 2009;  Stanley et al. 2021) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error. 
 
+#### Omega_s surfaces
+
+Omega surfaces (Klocker et al., 2009;  Stanley et al. 2021) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error. 
+
 #### Topobaric surfaces
 
 Topobaric surfaces (Stanley 2019a) are approximately neutral surfaces that are highly accurate, fast to compute, and possess an exact geostrophic streamfunction (though it is ill-defined, as it is for truly neutral surfaces). Topobaric surfaces are built from a multivalued functional relationship between the in-situ density and the pressure that exists on a truly neutral surface, or on a topobaric surface. The single-valued branches of this function are valid on regions that are determined by the Reeb graph of the pressure on the surface. Topobaric surfaces are constructed from an initial approximately neutral surface of any quality using an iterative procedure.  Each iteration calculates the Reeb graph, empirically fits the density to the pressure using simple functions, then updates the surface such that the density on the surface matches that given by the these simple functions. 
