@@ -142,6 +142,10 @@ Doraiswamy, H. & Natarajan, V. Computing Reeb Graphs as a Union of Contour Trees
 
 Klocker, A., McDougall, T.J., Jackett, D.R., 2009. A new method for forming approximately neutral surfaces. Ocean Science 5, 155–172. https://doi.org/10.5194/os-5-155-2009
 
+Lang, Y., Stanley, G. J., McDougall, T. J., & Barker, P. M. (2020). A pressure-invariant neutral density variable for the world's oceans. Journal of Physical Oceanography, 50(12), 3585-3604.
+
+Lang, Y., Stanley, G. J., & McDougall, T. J., (2023). Spurious dianeutral advection and methods for its minimization. Journal of Physical Oceanography.
+
 McDougall, T.J., 1989. Streamfunctions for the lateral velocity vector in a compressible ocean. Journal of Marine Research 47, 267–284. https://doi.org/10.1357/002224089785076271
 
 McDougall, T.J., 1987. Neutral Surfaces. Journal of Physical Oceanography. https://doi.org/10.1175/1520-0485(1987)017<1950:NS>2.0.CO;2
