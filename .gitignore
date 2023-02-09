@@ -1,3 +1,4 @@
 **/codegen
 *.mex*
 *_info.txt
+.DS_Store
