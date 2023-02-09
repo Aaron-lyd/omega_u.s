@@ -1,4 +1,3 @@
-function y = nanrms(varargin)
+function y = nanrms(x)
 
-narginchk(1,2);
-y = rms(varargin{:},'omitnan');
+y = sqrt(mean(x .* conj(x), 'omitnan'));
