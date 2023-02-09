@@ -1,5 +1,3 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4615747.svg)](https://doi.org/10.5281/zenodo.4615747)
-
 # Neutral density variables
 ## Software for creating neutral density variables
 
@@ -168,7 +166,7 @@ Zhang, H.-M., Hogg, N.G., 1992. Circulation and water mass balance in the Brazil
 ## Copyright:
 MIT License
 
-Copyright (c) 2023 Yandong Lang and 2021 Geoff Stanley
+Copyright (c) 2023 Yandong Lang and Geoff Stanley
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:  
 
