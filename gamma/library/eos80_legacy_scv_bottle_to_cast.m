@@ -1,4 +1,4 @@
-function [SP_scv, t_scv, p_scv] = eos80_legacy_scv_bottle_to_cast_GJS(SP_bottle,t_bottle,p_bottle,SP,t,p)
+function [SP_scv, t_scv, p_scv] = eos80_legacy_scv_bottle_to_cast(SP_bottle,t_bottle,p_bottle,SP,t,p)
 % Modified by Geoff Stanley
 % 13/05/2019 - modified to resemble eos80_legacy_ntp_bottle_to_cast.m, 
 %              fixing a bug wherein in-situ temperature was treated as 

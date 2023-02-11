@@ -29,7 +29,7 @@ function [gamma_scv, gamma_error_lower, gamma_error_upper] = gamma_scv(SP,t,p,lo
 %  where SP & t is MxN.
 %
 % OUTPUT:
-%  gamma_scv  = pressure-invariant neutral density                                  [ kg m^-3 ]
+%  gamma_scv  = pressure-invariant neutral density              [ kg m^-3 ]
 % Optional:
 %  gamma_error_lower = lower estimate of the error
 %  gamma_error_upper = upper estimate of the error
@@ -92,6 +92,25 @@ SP(long < 0 | long > 360 | lat < -80 | lat > 64 | SP < 0 | SP > 42 | t < -2.5 | 
 Iocean = ~isnan(SP + t + p + lat + long);
 
 gamma_scv = nan(size(SP));
+
+% Use the _STP versions because these include bug fixes, even though we
+% don't need the extra _STP outputs here; see commented out code below.
+if nargout > 1
+    gamma_error_lower = gamma_scv;
+    gamma_error_upper = gamma_scv;
+    [gamma_scv(Iocean), gamma_error_lower(Iocean), gamma_error_upper(Iocean)] = ...
+        eos80_legacy_gamma_scv_labelling_STP(SP(Iocean),t(Iocean),p(Iocean),long(Iocean),lat(Iocean));
+else
+    gamma_scv(Iocean) = ...
+        eos80_legacy_gamma_scv_labelling_STP(SP(Iocean),t(Iocean),p(Iocean),long(Iocean),lat(Iocean));
+end
+
+
+%{
+% The following code can be used for research purposes when additional 
+% information is needed about the four bottles in the reference dataset
+% that the observation bottle is linked to.
+
 SP_ntp = nan(size(SP));
 t_ntp = nan(size(SP));
 T_ntp = nan(size(SP));
@@ -122,23 +141,11 @@ gamma_ntp2 = nan(size(SP));
 gamma_ntp3 = nan(size(SP));
 gamma_ntp4 = nan(size(SP));
 
-
-
-if nargout > 1
-    gamma_error_lower = gamma_scv;
-    gamma_error_upper = gamma_scv;
-    [gamma_scv(Iocean), gamma_error_lower(Iocean), gamma_error_upper(Iocean), SP_ntp(Iocean), t_ntp(Iocean), T_ntp(Iocean), p_ntp(Iocean),...
-          gamma_ntp1(Iocean), gamma_ntp2(Iocean), gamma_ntp3(Iocean), gamma_ntp4(Iocean),...
-          SP_ntp1(Iocean), t_ntp1(Iocean), T_ntp1(Iocean), p_ntp1(Iocean), SP_ntp2(Iocean), t_ntp2(Iocean), T_ntp2(Iocean), p_ntp2(Iocean),...
-          SP_ntp3(Iocean), t_ntp3(Iocean), T_ntp3(Iocean), p_ntp3(Iocean), SP_ntp4(Iocean), t_ntp4(Iocean), T_ntp4(Iocean), p_ntp4(Iocean)] = ...
-        eos80_legacy_gamma_scv_labelling_STP_GJS(SP(Iocean),t(Iocean),p(Iocean),long(Iocean),lat(Iocean));
-else
-    [gamma_scv(Iocean), ~, ~, SP_ntp(Iocean), t_ntp(Iocean), T_ntp(Iocean), p_ntp(Iocean),...
-          gamma_ntp1(Iocean), gamma_ntp2(Iocean), gamma_ntp3(Iocean), gamma_ntp4(Iocean),...
-          SP_ntp1(Iocean), t_ntp1(Iocean), T_ntp1(Iocean), p_ntp1(Iocean), SP_ntp2(Iocean), t_ntp2(Iocean), T_ntp2(Iocean), p_ntp2(Iocean),...
-          SP_ntp3(Iocean), t_ntp3(Iocean), T_ntp3(Iocean), p_ntp3(Iocean), SP_ntp4(Iocean), t_ntp4(Iocean), T_ntp4(Iocean), p_ntp4(Iocean)] = ...
-        eos80_legacy_gamma_scv_labelling_STP_GJS(SP(Iocean),t(Iocean),p(Iocean),long(Iocean),lat(Iocean));
-end
-
+[gamma_scv(Iocean), gamma_error_lower(Iocean), gamma_error_upper(Iocean), SP_ntp(Iocean), t_ntp(Iocean), T_ntp(Iocean), p_ntp(Iocean),...
+  gamma_ntp1(Iocean), gamma_ntp2(Iocean), gamma_ntp3(Iocean), gamma_ntp4(Iocean),...
+  SP_ntp1(Iocean), t_ntp1(Iocean), T_ntp1(Iocean), p_ntp1(Iocean), SP_ntp2(Iocean), t_ntp2(Iocean), T_ntp2(Iocean), p_ntp2(Iocean),...
+  SP_ntp3(Iocean), t_ntp3(Iocean), T_ntp3(Iocean), p_ntp3(Iocean), SP_ntp4(Iocean), t_ntp4(Iocean), T_ntp4(Iocean), p_ntp4(Iocean)] = ...
+  eos80_legacy_gamma_scv_labelling_STP(SP(Iocean),t(Iocean),p(Iocean),long(Iocean),lat(Iocean));
+%}
 
 end

@@ -1,7 +1,21 @@
-function [gamma_n, gamma_error_lower, gamma_error_upper, SP_ntp, t_ntp, T_ntp, p_ntp,...
+function [gamma_n, gamma_error_lower, gamma_error_upper, ...
+          SP_ntp, t_ntp, T_ntp, p_ntp,...
           gamma_ntp1, gamma_ntp2, gamma_ntp3, gamma_ntp4,...
           SP_ntp1, t_ntp1, T_ntp1, p_ntp1, SP_ntp2, t_ntp2, T_ntp2, p_ntp2,...
-          SP_ntp3, t_ntp3, T_ntp3, p_ntp3, SP_ntp4, t_ntp4, T_ntp4, p_ntp4] = eos80_legacy_gamma_n_labelling_STP_GJS_no_extrapolation(SP,t,p,long,lat)
+          SP_ntp3, t_ntp3, T_ntp3, p_ntp3, SP_ntp4, t_ntp4, T_ntp4, p_ntp4] ...
+          = eos80_legacy_gamma_n_labelling_STP_no_extrapolation(SP,t,p,long,lat)
+%
+% Like original eos80_legacy_gamma_n_labelling (documented below), but 
+% also output salinity, temperature, and pressure of the bottles where gamma_n is taken,
+% and does no extrapolation, but rather returns NaN when any of the four neighbours are NaN.
+%
+% Geoff Stanley
+% Version history: 
+% 13/05/2019 - calling eos80_legacy_scv_bottle_to_cast_GJS which properly
+%              handles in-situ temperature.
+% 26/03/2019 - fixed a bug causing MATLAB to crash when a pressure
+%              identically equals the bottom pressure of the reference
+%              dataset
 
 % eos80_legacy_gamma_n_labelling                            neutral density
 %==========================================================================
@@ -314,43 +328,47 @@ end
 
 gamma_n = gamma_n(:);
 
-SP_ntps = [SP_ntp1; SP_ntp2; SP_ntp3; SP_ntp4];
-t_ntps = [t_ntp1; t_ntp2; t_ntp3; t_ntp4];
-p_ntps = [p_ntp1; p_ntp2; p_ntp3; p_ntp4];
-T_ntps = eos80_legacy_pt(SP_ntps, t_ntps, p_ntps, zeros(size(p_ntps)));
+% GJS additions to output SP, T, and p of the NTP-linked parcel
+if nargout > 3
+    SP_ntps = [SP_ntp1; SP_ntp2; SP_ntp3; SP_ntp4];
+    t_ntps = [t_ntp1; t_ntp2; t_ntp3; t_ntp4];
+    p_ntps = [p_ntp1; p_ntp2; p_ntp3; p_ntp4];
+    T_ntps = eos80_legacy_pt(SP_ntps, t_ntps, p_ntps, zeros(size(p_ntps)));
 
-gamma_ntp1 = gamma_ntps(1,:);
-gamma_ntp2 = gamma_ntps(2,:);
-gamma_ntp3 = gamma_ntps(3,:);
-gamma_ntp4 = gamma_ntps(4,:);
+    gamma_ntp1 = gamma_ntps(1,:);
+    gamma_ntp2 = gamma_ntps(2,:);
+    gamma_ntp3 = gamma_ntps(3,:);
+    gamma_ntp4 = gamma_ntps(4,:);
 
-gamma_ntp1 = gamma_ntp1(:);
-gamma_ntp2 = gamma_ntp2(:);
-gamma_ntp3 = gamma_ntp3(:);
-gamma_ntp4 = gamma_ntp4(:);
+    gamma_ntp1 = gamma_ntp1(:);
+    gamma_ntp2 = gamma_ntp2(:);
+    gamma_ntp3 = gamma_ntp3(:);
+    gamma_ntp4 = gamma_ntp4(:);
 
-T_ntp1 = T_ntps(1,:);
-T_ntp2 = T_ntps(2,:);
-T_ntp3 = T_ntps(3,:);
-T_ntp4 = T_ntps(4,:);
+    T_ntp1 = T_ntps(1,:);
+    T_ntp2 = T_ntps(2,:);
+    T_ntp3 = T_ntps(3,:);
+    T_ntp4 = T_ntps(4,:);
 
-T_ntp1 = T_ntp1(:);
-T_ntp2 = T_ntp2(:);
-T_ntp3 = T_ntp3(:);
-T_ntp4 = T_ntp4(:);
+    T_ntp1 = T_ntp1(:);
+    T_ntp2 = T_ntp2(:);
+    T_ntp3 = T_ntp3(:);
+    T_ntp4 = T_ntp4(:);
 
-SP_ntp = (1-ry).*(SP_ntps(1,:) + rx.*(SP_ntps(2,:) - SP_ntps(1,:))) ...
-    + ry.*(SP_ntps(4,:) + rx.*(SP_ntps(3,:) - SP_ntps(4,:)));
-t_ntp = (1-ry).*(t_ntps(1,:) + rx.*(t_ntps(2,:) - t_ntps(1,:))) ...
-    + ry.*(t_ntps(4,:) + rx.*(t_ntps(3,:) - t_ntps(4,:)));
-T_ntp = (1-ry).*(T_ntps(1,:) + rx.*(T_ntps(2,:) - T_ntps(1,:))) ...
-    + ry.*(T_ntps(4,:) + rx.*(T_ntps(3,:) - T_ntps(4,:)));
-p_ntp = (1-ry).*(p_ntps(1,:) + rx.*(p_ntps(2,:) - p_ntps(1,:))) ...
-    + ry.*(p_ntps(4,:) + rx.*(p_ntps(3,:) - p_ntps(4,:)));
+    SP_ntp = (1-ry).*(SP_ntps(1,:) + rx.*(SP_ntps(2,:) - SP_ntps(1,:))) ...
+        + ry.*(SP_ntps(4,:) + rx.*(SP_ntps(3,:) - SP_ntps(4,:)));
+    t_ntp = (1-ry).*(t_ntps(1,:) + rx.*(t_ntps(2,:) - t_ntps(1,:))) ...
+        + ry.*(t_ntps(4,:) + rx.*(t_ntps(3,:) - t_ntps(4,:)));
+    T_ntp = (1-ry).*(T_ntps(1,:) + rx.*(T_ntps(2,:) - T_ntps(1,:))) ...
+        + ry.*(T_ntps(4,:) + rx.*(T_ntps(3,:) - T_ntps(4,:)));
+    p_ntp = (1-ry).*(p_ntps(1,:) + rx.*(p_ntps(2,:) - p_ntps(1,:))) ...
+        + ry.*(p_ntps(4,:) + rx.*(p_ntps(3,:) - p_ntps(4,:)));
 
-SP_ntp = SP_ntp(:);
-t_ntp = t_ntp(:);
-T_ntp = T_ntp(:);
-p_ntp = p_ntp(:);
+    SP_ntp = SP_ntp(:);
+    t_ntp = t_ntp(:);
+    T_ntp = T_ntp(:);
+    p_ntp = p_ntp(:);
+end
+% end GJS additions
 
 end

@@ -1,8 +1,13 @@
-function [gamma_n, gamma_error_lower, gamma_error_upper, SP_ntp, t_ntp, T_ntp, p_ntp,...
+function [gamma_n, gamma_error_lower, gamma_error_upper, ...
+          SP_ntp, t_ntp, T_ntp, p_ntp,...
           gamma_ntp1, gamma_ntp2, gamma_ntp3, gamma_ntp4,...
           SP_ntp1, t_ntp1, T_ntp1, p_ntp1, SP_ntp2, t_ntp2, T_ntp2, p_ntp2,...
-          SP_ntp3, t_ntp3, T_ntp3, p_ntp3, SP_ntp4, t_ntp4, T_ntp4, p_ntp4] = eos80_legacy_gamma_scv_labelling_STP_GJS_no_extrapolation(SP,t,p,long,lat)
-% Also output salinity, temperature, and pressure of the bottle where gamma_n is taken.
+          SP_ntp3, t_ntp3, T_ntp3, p_ntp3, SP_ntp4, t_ntp4, T_ntp4, p_ntp4] ...
+          = eos80_legacy_gamma_n_labelling_STP(SP,t,p,long,lat)
+%
+% Like original eos80_legacy_gamma_n_labelling (documented below), but 
+% also output salinity, temperature, and pressure of the bottles where gamma_n is taken.
+%
 % Geoff Stanley
 % Version history: 
 % 13/05/2019 - calling eos80_legacy_scv_bottle_to_cast_GJS which properly
@@ -56,7 +61,7 @@ function [gamma_n, gamma_error_lower, gamma_error_upper, SP_ntp, t_ntp, T_ntp, p
 %
 % REFERENCES:
 %  Jackett, D.R., and T.J. McDougall, 1997: A Neutral Density Variable for
-%   the World's Oceans. J. Phys. Oceanogr., 27, pp. 237�263.
+%   the World's Oceans. J. Phys. Oceanogr., 27, pp. 237263.
 %
 %  The software is available from http://www.TEOS-10.org
 %
@@ -88,13 +93,13 @@ Ix0(Ix0 == nx) = nx - 1;
               
 Iy0 = floor(1 + (ny-1)*(lat - lat_ref(1))./(lat_ref(ny) - lat_ref(1)));
 Iy0 = Iy0(:); 
-Iy0(Iy0 == ny) = ny - 1;
+Iy0(Iy0 == ny) = ny - 1; 
      
 Iy0_Ix0ny = Iy0 + Ix0.*ny;        
 I1 = Iy0_Ix0ny - ny;              
 I2 = Iy0_Ix0ny;
 I3 = Iy0_Ix0ny + 1;
-I4 = Iy0_Ix0ny + (1 - ny);
+I4 = Iy0_Ix0ny + (1 - ny);  
 
 % calculate the ntp for the bottle to each of the 4 surrounding grid points
 [mp,np] = size(I1);
@@ -111,60 +116,54 @@ p_ref4_dummy = repmat(p_ref(:),1,mp);
 p_ref4_dummy(isnan(SP_ref(:,I4))) = NaN;
 
 % do the quick vectorised ntp calculation
-[SP_ntp1, t_ntp1, p_ntp1] = eos80_legacy_scv_bottle_to_cast_GJS(SP(:).',t(:).',p(:).',SP_ref(:,I1),t_ref(:,I1),p_ref1_dummy);
-[SP_ntp2, t_ntp2, p_ntp2] = eos80_legacy_scv_bottle_to_cast_GJS(SP(:).',t(:).',p(:).',SP_ref(:,I2),t_ref(:,I2),p_ref2_dummy);
-[SP_ntp3, t_ntp3, p_ntp3] = eos80_legacy_scv_bottle_to_cast_GJS(SP(:).',t(:).',p(:).',SP_ref(:,I3),t_ref(:,I3),p_ref3_dummy);
-[SP_ntp4, t_ntp4, p_ntp4] = eos80_legacy_scv_bottle_to_cast_GJS(SP(:).',t(:).',p(:).',SP_ref(:,I4),t_ref(:,I4),p_ref4_dummy);
+[SP_ntp1, t_ntp1, p_ntp1] = eos80_legacy_ntp_bottle_to_cast(SP(:).',t(:).',p(:).',SP_ref(:,I1),t_ref(:,I1),p_ref1_dummy);
+[SP_ntp2, t_ntp2, p_ntp2] = eos80_legacy_ntp_bottle_to_cast(SP(:).',t(:).',p(:).',SP_ref(:,I2),t_ref(:,I2),p_ref2_dummy);
+[SP_ntp3, t_ntp3, p_ntp3] = eos80_legacy_ntp_bottle_to_cast(SP(:).',t(:).',p(:).',SP_ref(:,I3),t_ref(:,I3),p_ref3_dummy);
+[SP_ntp4, t_ntp4, p_ntp4] = eos80_legacy_ntp_bottle_to_cast(SP(:).',t(:).',p(:).',SP_ref(:,I4),t_ref(:,I4),p_ref4_dummy);
 
-%{
-% Check the SCV parcel and the bottle have the same potential density referenced to the pressure of the SCV parcel
-foo = eos80_legacy_pot_rho_pref(SP_ntp1, t_ntp1, p_ntp1, p_ntp1);
-bar = eos80_legacy_pot_rho_pref(SP(:).', t(:).'+1e-5, p(:).', p_ntp1);
-figure; scatter(foo(:), foo(:) - bar(:), '.');
-title('labelling, eos80, ntp1');
-%}
-
-%{
-% Repeat the above check but with an incorrect equation of state.
-foo = densjmd95_tb(SP_ntp1, sw_ptmp(SP_ntp1, t_ntp1, p_ntp1, zeros(size(p_ntp1))) * 1.00024, p_ntp1);
-bar = densjmd95_tb(SP(:).', sw_ptmp(SP(:).', t(:).', p(:).', zeros(size(p(:).'))) * 1.00024, p_ntp1);
-figure; scatter(foo(:), foo(:) - bar(:), '.');
-title('labelling, ntp1');
-%}
-
-% Assign a pressure bin for each bottle.
-% Removed by GJS for bug fix, 26/03/2019:
-%{
-n1 = length(p_ntp1);
-Iz1 = NaN(n1,1);
-Iz2 = Iz1;
-Iz3 = Iz1;
-Iz4 = Iz1;
-for I = 2:nz   
-    Iz1(p_ntp1 >= p_ref(I-1) & p_ntp1 < p_ref(I)) = I - 1;    
-    Iz2(p_ntp2 >= p_ref(I-1) & p_ntp2 < p_ref(I)) = I - 1;    
-    Iz3(p_ntp3 >= p_ref(I-1) & p_ntp3 < p_ref(I)) = I - 1;    
-    Iz4(p_ntp4 >= p_ref(I-1) & p_ntp4 < p_ref(I)) = I - 1;     
-end
-Iz1(p_ntp1 == p_ref(nz)) = nz; 
-Iz2(p_ntp2 == p_ref(nz)) = nz; 
-Iz3(p_ntp3 == p_ref(nz)) = nz; 
-Iz4(p_ntp4 == p_ref(nz)) = nz; 
-
-% calculate the indicies for each of the 4 surrounding non-NaN npt's. 
-I1z_nn = find(~isnan(Iz1));
-Ixyz1 = sub2ind(size(SP_ref),Iz1(I1z_nn),Iy0(I1z_nn),Ix0(I1z_nn));
-
-I2z_nn = find(~isnan(Iz2));
-Ixyz2 = sub2ind(size(SP_ref),Iz2(I2z_nn),Iy0(I2z_nn),Ix0(I2z_nn)+1);
-
-I3z_nn = find(~isnan(Iz3));
-Ixyz3 = sub2ind(size(SP_ref),Iz3(I3z_nn),Iy0(I3z_nn)+1,Ix0(I3z_nn)+1);
-
-I4z_nn = find(~isnan(Iz4));
-Ixyz4 = sub2ind(size(SP_ref),Iz4(I4z_nn),Iy0(I4z_nn)+1,Ix0(I4z_nn));
-
-%}
+% % Assign a pressure bin for each bottle.
+% n1 = length(p_ntp1);
+% Iz1 = NaN(n1,1);
+% Iz2 = Iz1;
+% Iz3 = Iz1;
+% Iz4 = Iz1;
+% for I = 2:nz   
+%     Iz1(p_ntp1 >= p_ref(I-1) & p_ntp1 < p_ref(I)) = I - 1;    
+%     Iz2(p_ntp2 >= p_ref(I-1) & p_ntp2 < p_ref(I)) = I - 1;    
+%     Iz3(p_ntp3 >= p_ref(I-1) & p_ntp3 < p_ref(I)) = I - 1;    
+%     Iz4(p_ntp4 >= p_ref(I-1) & p_ntp4 < p_ref(I)) = I - 1;     
+% end
+% % Iz1(p_ntp1 == p_ref(nz)) = nz; % original 
+% % Iz2(p_ntp2 == p_ref(nz)) = nz; % original 
+% % Iz3(p_ntp3 == p_ref(nz)) = nz; % original 
+% % Iz4(p_ntp4 == p_ref(nz)) = nz; % original 
+% 
+% Iz1(p_ntp1 == p_ref(nz)) = nz-1; % 26/03/19 new
+% Iz2(p_ntp2 == p_ref(nz)) = nz-1; % 26/03/19 new
+% Iz3(p_ntp3 == p_ref(nz)) = nz-1; % 26/03/19 new
+% Iz4(p_ntp4 == p_ref(nz)) = nz-1; % 26/03/19 new
+% 
+% % recommended change: % 26/03/19 new
+% % edges = p_ref;
+% % edges(end) = inf;
+% % [~, Iz1] = histc(p_ntp1, edges);
+% % [~, Iz2] = histc(p_ntp2, edges);
+% % [~, Iz3] = histc(p_ntp3, edges);
+% % [~, Iz4] = histc(p_ntp4, edges);
+% 
+% 
+% % calculate the indicies for each of the 4 surrounding non-NaN npt's. 
+% I1z_nn = find(~isnan(Iz1));
+% Ixyz1 = sub2ind(size(SP_ref),Iz1(I1z_nn),Iy0(I1z_nn),Ix0(I1z_nn));
+% 
+% I2z_nn = find(~isnan(Iz2));
+% Ixyz2 = sub2ind(size(SP_ref),Iz2(I2z_nn),Iy0(I2z_nn),Ix0(I2z_nn)+1);
+% 
+% I3z_nn = find(~isnan(Iz3));
+% Ixyz3 = sub2ind(size(SP_ref),Iz3(I3z_nn),Iy0(I3z_nn)+1,Ix0(I3z_nn)+1);
+% 
+% I4z_nn = find(~isnan(Iz4)); 
+% Ixyz4 = sub2ind(size(SP_ref),Iz4(I4z_nn),Iy0(I4z_nn)+1,Ix0(I4z_nn));
 
 % Begin GJS bug fix, 26/03/2019
 edges = p_ref;
@@ -252,30 +251,30 @@ end
 extrap_weights = ones(4,length(gamma_ntp1));
 
 %calculate a gamma and the appropiate weights, when extrapolation is needed
-% if any(isnan(gamma_ntp1))
-%     [Inan] = find(isnan(gamma_ntp1));
-%     [gamma_ntp1(Inan),extrap_weights(1,Inan)] = ...
-%         eos80_legacy_gamma_n_labelling_extrapolation_scv(SP(Inan),t(Inan),p(Inan),...
-%         SP_ref(:,I1(Inan)),t_ref(:,I1(Inan)),p_ref(:),gamma_n_ref(:,I1(Inan)));
-% end
-% if any(isnan(gamma_ntp2))
-%     [Inan] = find(isnan(gamma_ntp2));
-%     [gamma_ntp2(Inan), extrap_weights(2,Inan)] = ...
-%         eos80_legacy_gamma_n_labelling_extrapolation_scv(SP(Inan),t(Inan),p(Inan),...
-%         SP_ref(:,I2(Inan)),t_ref(:,I2(Inan)),p_ref(:),gamma_n_ref(:,I2(Inan)));
-% end
-% if any(isnan(gamma_ntp3))
-%     [Inan] = find(isnan(gamma_ntp3));
-%     [gamma_ntp3(Inan), extrap_weights(3,Inan)] = ...
-%         eos80_legacy_gamma_n_labelling_extrapolation_scv(SP(Inan),t(Inan),p(Inan),...
-%         SP_ref(:,I3(Inan)),t_ref(:,I3(Inan)),p_ref(:),gamma_n_ref(:,I3(Inan)));
-% end
-% if any(isnan(gamma_ntp4))
-%     [Inan] = find(isnan(gamma_ntp4));
-%     [gamma_ntp4(Inan), extrap_weights(4,Inan)] = ...
-%         eos80_legacy_gamma_n_labelling_extrapolation_scv(SP(Inan),t(Inan),p(Inan),...
-%         SP_ref(:,I4(Inan)),t_ref(:,I4(Inan)),p_ref(:),gamma_n_ref(:,I4(Inan)));
-% end
+if any(isnan(gamma_ntp1))
+    [Inan] = find(isnan(gamma_ntp1));
+    [gamma_ntp1(Inan),extrap_weights(1,Inan)] = ...
+        eos80_legacy_gamma_n_labelling_extrapolation(SP(Inan),t(Inan),p(Inan),...
+        SP_ref(:,I1(Inan)),t_ref(:,I1(Inan)),p_ref(:),gamma_n_ref(:,I1(Inan)));
+end
+if any(isnan(gamma_ntp2))
+    [Inan] = find(isnan(gamma_ntp2));
+    [gamma_ntp2(Inan), extrap_weights(2,Inan)] = ...
+        eos80_legacy_gamma_n_labelling_extrapolation(SP(Inan),t(Inan),p(Inan),...
+        SP_ref(:,I2(Inan)),t_ref(:,I2(Inan)),p_ref(:),gamma_n_ref(:,I2(Inan)));
+end
+if any(isnan(gamma_ntp3))
+    [Inan] = find(isnan(gamma_ntp3));
+    [gamma_ntp3(Inan), extrap_weights(3,Inan)] = ...
+        eos80_legacy_gamma_n_labelling_extrapolation(SP(Inan),t(Inan),p(Inan),...
+        SP_ref(:,I3(Inan)),t_ref(:,I3(Inan)),p_ref(:),gamma_n_ref(:,I3(Inan)));
+end
+if any(isnan(gamma_ntp4))
+    [Inan] = find(isnan(gamma_ntp4));
+    [gamma_ntp4(Inan), extrap_weights(4,Inan)] = ...
+        eos80_legacy_gamma_n_labelling_extrapolation(SP(Inan),t(Inan),p(Inan),...
+        SP_ref(:,I4(Inan)),t_ref(:,I4(Inan)),p_ref(:),gamma_n_ref(:,I4(Inan)));
+end
 
 gamma_ntps(1,:) = gamma_ntp1;
 gamma_ntps(2,:) = gamma_ntp2;
@@ -289,16 +288,16 @@ ry = (lat(:).' - lat_ref(Iy0))./(lat_ref(Iy0+1) - lat_ref(Iy0));
 % separate the oceans either side of Central America
 if any(abs(long-277.6085)<=17.6085 & abs(lat-9.775) <= 9.775)
     [I_ca] = find(abs(long-277.6085)<=17.6085 & abs(lat-9.775) <= 9.775);
-%     gamma_ntps(:,I_ca) = gsw_refdata_add_ca_barrier(gamma_ntps(:,I_ca),  long(I_ca), lat(I_ca),...
-%              long_ref(Ix0(I_ca)), lat_ref(Iy0(I_ca)), 4, 4, extrap_weights(:,I_ca));
-    gamma_ntps(:,I_ca) = nan;
+    gamma_ntps(:,I_ca) = gsw_refdata_add_ca_barrier(gamma_ntps(:,I_ca),  long(I_ca), lat(I_ca),...
+             long_ref(Ix0(I_ca)), lat_ref(Iy0(I_ca)), 4, 4, extrap_weights(:,I_ca));
+
 end
 
 % replace any NaN's with the mean of the non-NaN grid points
-% if any(isnan(sum(gamma_ntps))) | any(sum(extrap_weights) < 4)
-%     [I_nan] = find(isnan(sum(gamma_ntps)) | sum(extrap_weights) < 1);
-%     gamma_ntps(:,I_nan) = gsw_refdata_replace_nan(gamma_ntps(:,I_nan), extrap_weights(:,I_nan));
-% end
+if any(isnan(sum(gamma_ntps))) | any(sum(extrap_weights) < 4)
+    [I_nan] = find(isnan(sum(gamma_ntps)) | sum(extrap_weights) < 1);
+    gamma_ntps(:,I_nan) = gsw_refdata_replace_nan(gamma_ntps(:,I_nan), extrap_weights(:,I_nan));
+end
 
 % calculate the averaged gamma_n
 gamma_n = (1-ry).*(gamma_ntps(1,:) + rx.*(gamma_ntps(2,:) - gamma_ntps(1,:))) ...
@@ -329,47 +328,47 @@ end
 
 gamma_n = gamma_n(:);
 
+% GJS additions to output SP, T, and p of the NTP-linked parcel
+if nargout > 3
+    SP_ntps = [SP_ntp1; SP_ntp2; SP_ntp3; SP_ntp4];
+    t_ntps = [t_ntp1; t_ntp2; t_ntp3; t_ntp4];
+    p_ntps = [p_ntp1; p_ntp2; p_ntp3; p_ntp4];
+    T_ntps = eos80_legacy_pt(SP_ntps, t_ntps, p_ntps, zeros(size(p_ntps)));
 
-% GJS additions to output SP, T, and p of the SCV parcel
-SP_ntps = [SP_ntp1; SP_ntp2; SP_ntp3; SP_ntp4];
-t_ntps = [t_ntp1; t_ntp2; t_ntp3; t_ntp4];
-p_ntps = [p_ntp1; p_ntp2; p_ntp3; p_ntp4];
-T_ntps = eos80_legacy_pt(SP_ntps, t_ntps, p_ntps, zeros(size(p_ntps)));
+    gamma_ntp1 = gamma_ntps(1,:);
+    gamma_ntp2 = gamma_ntps(2,:);
+    gamma_ntp3 = gamma_ntps(3,:);
+    gamma_ntp4 = gamma_ntps(4,:);
 
-gamma_ntp1 = gamma_ntps(1,:);
-gamma_ntp2 = gamma_ntps(2,:);
-gamma_ntp3 = gamma_ntps(3,:);
-gamma_ntp4 = gamma_ntps(4,:);
+    gamma_ntp1 = gamma_ntp1(:);
+    gamma_ntp2 = gamma_ntp2(:);
+    gamma_ntp3 = gamma_ntp3(:);
+    gamma_ntp4 = gamma_ntp4(:);
 
-gamma_ntp1 = gamma_ntp1(:);
-gamma_ntp2 = gamma_ntp2(:);
-gamma_ntp3 = gamma_ntp3(:);
-gamma_ntp4 = gamma_ntp4(:);
+    T_ntp1 = T_ntps(1,:);
+    T_ntp2 = T_ntps(2,:);
+    T_ntp3 = T_ntps(3,:);
+    T_ntp4 = T_ntps(4,:);
 
-T_ntp1 = T_ntps(1,:);
-T_ntp2 = T_ntps(2,:);
-T_ntp3 = T_ntps(3,:);
-T_ntp4 = T_ntps(4,:);
+    T_ntp1 = T_ntp1(:);
+    T_ntp2 = T_ntp2(:);
+    T_ntp3 = T_ntp3(:);
+    T_ntp4 = T_ntp4(:);
 
-T_ntp1 = T_ntp1(:);
-T_ntp2 = T_ntp2(:);
-T_ntp3 = T_ntp3(:);
-T_ntp4 = T_ntp4(:);
+    SP_ntp = (1-ry).*(SP_ntps(1,:) + rx.*(SP_ntps(2,:) - SP_ntps(1,:))) ...
+        + ry.*(SP_ntps(4,:) + rx.*(SP_ntps(3,:) - SP_ntps(4,:)));
+    t_ntp = (1-ry).*(t_ntps(1,:) + rx.*(t_ntps(2,:) - t_ntps(1,:))) ...
+        + ry.*(t_ntps(4,:) + rx.*(t_ntps(3,:) - t_ntps(4,:)));
+    T_ntp = (1-ry).*(T_ntps(1,:) + rx.*(T_ntps(2,:) - T_ntps(1,:))) ...
+        + ry.*(T_ntps(4,:) + rx.*(T_ntps(3,:) - T_ntps(4,:)));
+    p_ntp = (1-ry).*(p_ntps(1,:) + rx.*(p_ntps(2,:) - p_ntps(1,:))) ...
+        + ry.*(p_ntps(4,:) + rx.*(p_ntps(3,:) - p_ntps(4,:)));
 
-SP_ntp = (1-ry).*(SP_ntps(1,:) + rx.*(SP_ntps(2,:) - SP_ntps(1,:))) ...
-    + ry.*(SP_ntps(4,:) + rx.*(SP_ntps(3,:) - SP_ntps(4,:)));
-t_ntp = (1-ry).*(t_ntps(1,:) + rx.*(t_ntps(2,:) - t_ntps(1,:))) ...
-    + ry.*(t_ntps(4,:) + rx.*(t_ntps(3,:) - t_ntps(4,:)));
-T_ntp = (1-ry).*(T_ntps(1,:) + rx.*(T_ntps(2,:) - T_ntps(1,:))) ...
-    + ry.*(T_ntps(4,:) + rx.*(T_ntps(3,:) - T_ntps(4,:)));
-p_ntp = (1-ry).*(p_ntps(1,:) + rx.*(p_ntps(2,:) - p_ntps(1,:))) ...
-    + ry.*(p_ntps(4,:) + rx.*(p_ntps(3,:) - p_ntps(4,:)));
-
-SP_ntp = SP_ntp(:);
-t_ntp = t_ntp(:);
-T_ntp = T_ntp(:);
-p_ntp = p_ntp(:);
+    SP_ntp = SP_ntp(:);
+    t_ntp = t_ntp(:);
+    T_ntp = T_ntp(:);
+    p_ntp = p_ntp(:);
+end
 % end GJS additions
 
 end
-
