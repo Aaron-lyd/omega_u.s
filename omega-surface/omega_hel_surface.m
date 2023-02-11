@@ -283,15 +283,15 @@ for iter = 1 : n_iter
       d.s2x_rms(iter) = nanrms(s2x(:));
       d.s2y_rms(iter) = nanrms(s2y(:));
   elseif mode == 7
-      d.ehel_rms(iter) = nanstd(esp(:));
+      d.ehel_rms(iter) = nanrms(esp(:));
       d.ehelx_rms(iter) = nanrms(ehelx(:));
       d.ehely_rms(iter) = nanrms(ehely(:));
   elseif mode == 8
-      d.ehel_s2_rms(iter) = nanstd(esp(:)) + nanrms(s2x(:))+ nanrms(s2y(:));
+      d.ehel_s2_rms(iter) = nanrms(esp(:)) + nanrms(s2x(:))+ nanrms(s2y(:));
   elseif mode == 9
-      d.ehelTz_rms(iter) = nanstd(ehelTz(:));
+      d.ehelTz_rms(iter) = nanrms(ehelTz(:));
   elseif mode == 10
-      d.ehelSz_rms(iter) = nanstd(ehelSz(:));
+      d.ehelSz_rms(iter) = nanrms(ehelSz(:));
   end
   d.dz_rms(iter) = nanrms(abs(dz(:)));
   d.sx_rms(iter) = nanrms(sx(:));
