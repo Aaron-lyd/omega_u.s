@@ -23,7 +23,15 @@ function [hp, hc] = pcol_logsigned(ax, x, y, z, m, M, s, col_m, col_n, cbarpos)
 % dat = [-150, -50, -.2, 0, .8, 1.01, 12, -5,  98, 102]; 
 % figure; ax=axes; pcol_logsigned(ax, 1, 1:length(dat), dat, 0, 2);
 %
-% Requirements: cbrewer, pcol
+% Note, pcolor does not centre the cell (i,j) at x(i,j), y(i,j).
+% Rather, it puts the bottom-left corner of the cell, here.  
+% That is, the cell with colour determined by F(i,j) has corners at 
+% x(i  ,j  ), y(i  ,j  )   bottom-left,
+% x(i+1,j  ), y(i+1,j  )   bottom-right,
+% x(i  ,j+1), y(i  ,j+1)   top-left,
+% x(i+1,j+1), y(i+1,j+1)   top-right
+%
+% Requirements: cbrewer2, pcol
 %
 % Author: Geoff Stanley.
 % Acknowledgements:  inspired by plot_grid_logscale.m by Graeme MacGilchrist
@@ -33,6 +41,7 @@ if nargin < 7 || isempty(s)
 end
 
 n = 2 * (M - m) * s + 1; % # of colors:  s * (# of intervals, positive and negative), plus 1 for middle color. 
+n = round(n);  % needed when M and m are not integers
 cm = flipud(cbrewer2('div', 'RdBu', n)); % (negative) Blue -> White -> Red (positive)
 
 if nargin < 8 || isempty(col_m)
@@ -86,10 +95,16 @@ else
   hc = colorbar;
 end
 
-hc.YTick = ax.CLim(1) : ax.CLim(2);
+%hc.YTick = ceil(-(M - m)) - .5 : floor(M-m) + .5 ; % this works when m and M are integers. 
+
+% let f(x) map the range [m, M] onto the range [0.5, (M - m) + 0.5].
+% Then evaluate f(x) for each integer x in [m,M].
+m_ = ceil(m);
+M_ = floor(M);
+yy = interp1([m, M], [.5, M - m + .5], m_ : M_);
+hc.YTick = [-fliplr(yy), yy];
 
 hc.YTickLabel = [ ...
-  arrayfun(@(F) ['-10^{' num2str(F) '}'], M : -1 : m, 'UniformOutput', false), ...
-  arrayfun(@(F) [ '10^{' num2str(F) '}'], m :  1 : M, 'UniformOutput', false) ] ;
-
+  arrayfun(@(F) ['-10^{' num2str(F) '}'], fliplr(m_ : M_), 'UniformOutput', false), ...
+  arrayfun(@(F) [ '10^{' num2str(F) '}'],        m_ : M_, 'UniformOutput', false) ] ;
 hc.TickLength = 0.015; % longer ticks
