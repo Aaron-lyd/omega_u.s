@@ -262,8 +262,6 @@ for iter = 1 : n_iter
       [dz, ehelTz, N] = omega_hel_Tz_matsolve(z, Z, SppZ, TppZ, Tz, Tzz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, DXC, DYC, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
   elseif mode == 10 % omega_hel weighted by Sz
       [dz, ehelSz, N] = omega_hel_Sz_matsolve(z, Z, SppZ, TppZ, Sz, Szz, u, v, uz, vz, sx, sy, dzi, dzj, DXG, DYG, DXC, DYC, RAX, RAY, RAC, sqrtAREA, i0, j0, I0, A4, A5, OPTS);
-  elseif mode == 11 % omega_s_lsqlin
-      [dz, N]       = omega_s_matsolve_lsqlin(z, Z, SppZ, TppZ, sqrtAREAX, sqrtAREAY, sx, sy, dzi, dzj, i0, j0, I0, A4, OPTS);
   end
     
   % --- Update the surface
