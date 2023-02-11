@@ -93,18 +93,23 @@ sscv = squeeze(sscv);tscv = squeeze(tscv);pscv = squeeze(pscv);
 zscv = pscv / dpdz_bsq; % transfer pressure to depth
 
 %% gammaT
-SR = gsw_SR_from_SP(SB);
-SA = gsw_SA_from_SP(SB,pB,longOCCAzxy,latOCCAzxy);
-CT = gsw_CT_from_pt(SA,TB);
-tic
-[z_gt,p_gt,sigref,gammat] = gsw_gammat_analytic_os_2021(SR,CT); % 30 sec
-toc
+if exist('gsw_rho_CT_exact', 'file')
+    SR = gsw_SR_from_SP(SB);
+    SA = gsw_SA_from_SP(SB,pB,longOCCAzxy,latOCCAzxy);
+    CT = gsw_CT_from_pt(SA,TB);
+    tic
+    [z_gt,p_gt,sigref,gammat] = gsw_gammat_analytic_os_2021(SR,CT); % 30 sec
+    toc
 
-%% gammaT surface
-gammat0 = interpfn(ZB, gammat(:,i0,j0), z0); % The isovalue of the potential density we want
-z_gammat = interpfn(gammat, ZB, gammat0); % the depth of the gammaT=27.5 surface, ZB is the depth
-[s_gammat, t_gammat] = ppc_val2(ZB, SppZ, TppZ, z_gammat);
-
+    % gammaT surface
+    gammat0 = interpfn(ZB, gammat(:,i0,j0), z0); % The isovalue of the potential density we want
+    z_gammat = interpfn(gammat, ZB, gammat0); % the depth of the gammaT=27.5 surface, ZB is the depth
+    [s_gammat, t_gammat] = ppc_val2(ZB, SppZ, TppZ, z_gammat);
+else
+    s_gammat = nan(ni, nj);
+    t_gammat = nan(ni, nj);
+    z_gammat = nan(ni, nj);
+end
 
 %% topobaric surface
 OPTS = [];

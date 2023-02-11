@@ -47,7 +47,6 @@ The ANS that minimizes a combination of those quantities minimized by Omega_u.s 
 
 
 ## Contents:
-- `./GSW_3_06/                        `- GSW toolbox V3.6 based on TEOS-10
 - `./gamma/                           `- create gamma^SCV neutral density variables
 - `./lib_add/                         `- libraries
 - `./run/                             `- example scripts
@@ -57,6 +56,10 @@ The ANS that minimizes a combination of those quantities minimized by Omega_u.s 
 ## Requirements:
 - MATLAB 2016b (tested on 2020a) or higher with the Optimization Toolbox
 - [neutral-surfaces](https://github.com/geoffstanley/neutral-surfaces/)
+
+## Optional Requirements:
+- [Gibbs-SeaWater (GSW) Oceanographic Toolbox](https://www.teos-10.org/software.htm)
+	+ GSW is needed to reproduce the full results of Lang et al (2023), but not to compute one's own omega type surfaces.
 
 
 ## Installation:
