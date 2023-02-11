@@ -1,10 +1,11 @@
 %% Load OCCA
+
+% Edit `datafolder` as needed, to point to folder containing OCCA's *0406annclim..nc files
 datafolder='/Users/yandonglang/OneDrive - UNSW/1. YL_PHD/3. Code/First year code/occa_data_calculation/OCCA/';
 % datafolder='C:\Users\z5233717\OneDrive - UNSW\1. YL_PHD\3. Code\First year code\occa_data_calculation\OCCA\';
 
 [g, SB, TB, pB, ETAN, ATMP, SAP] = load_OCCA(datafolder);
 
-% add something
 % Reshape the data into correct shape
 tB = eos80_legacy_pt(SB,TB,zeros(size(SB)),pB); % 1980 code
 SB = permute(SB, [3 1 2]);
@@ -17,8 +18,10 @@ ZB = -g.RC; % ZB is depth and ZB >0
 [nk, ni, nj] = size(SB);
 
 % get the horizontal velocity
-U = ncread('DDuvel.0406clim.nc','u');U = squeeze(U(:,:,:,1));U = permute(U, [3 1 2]);
-V = ncread('DDvvel.0406clim.nc','v');V = squeeze(V(:,:,:,1));V = permute(V, [3 1 2]);
+U = ncread(sprintf('%sDD%s.0406annclim.nc', datafolder, 'uvel'),'u');
+U = permute(U, [3 1 2]); % depth x lon x lat
+V = ncread(sprintf('%sDD%s.0406annclim.nc', datafolder, 'vvel'),'v');
+V = permute(V, [3 1 2]); % depth x lon x lat
 
 % interpolate salinity and temperature on the neutral density surface
 % interpfn = @ppc_linterp;
@@ -65,8 +68,7 @@ z0 = 2400;
 SIGMA = eos(SB, TB, z_ref); % the potential density of the world 3D data reference to z_ref
 sigma0 = interpfn(ZB, SIGMA(:,i0,j0), z0); % The isovalue of the potential density we want
 z_sigma = interpfn(SIGMA, ZB, sigma0); % the potential density surface's depth of the potential density surface reference to z_ref with iso value sigma0
-s_sigma = interpfn(ZB, SB, z_sigma);
-t_sigma = interpfn(ZB, TB, z_sigma);
+[s_sigma0, t_sigma0] = ppc_val2(ZB, SppZ, TppZ, z_sigma);
 
 %% Neutral density labels
 
@@ -79,7 +81,7 @@ pBB = dpdz_bsq * ZB;  % Get Boussinesq pressure (third argument to EOS) from Dep
 
 tic
 % gn = gamma_n_2020(SB, tB, pB, longOCCAzxy, latOCCAzxy);
-gscvE = gamma_scv(SB, tB, pBB, longOCCAzxy, latOCCAzxy);
+gscvE = gamma_scv(SB, tB, pBB, longOCCAzxy, latOCCAzxy); % ~ 3 mins
 toc
 
 %% Neutral density surface
@@ -95,14 +97,13 @@ SR = gsw_SR_from_SP(SB);
 SA = gsw_SA_from_SP(SB,pB,longOCCAzxy,latOCCAzxy);
 CT = gsw_CT_from_pt(SA,TB);
 tic
-[z_gt,p_gt,sigref,gammat] = gsw_gammat_analytic_os_2021(SR,CT);
+[z_gt,p_gt,sigref,gammat] = gsw_gammat_analytic_os_2021(SR,CT); % 30 sec
 toc
 
 %% gammaT surface
 gammat0 = interpfn(ZB, gammat(:,i0,j0), z0); % The isovalue of the potential density we want
 z_gammat = interpfn(gammat, ZB, gammat0); % the depth of the gammaT=27.5 surface, ZB is the depth
-s_gammat = interpfn(ZB, SB, z_gammat);
-t_gammat = interpfn(ZB, TB, z_gammat);
+[s_gammat, t_gammat] = ppc_val2(ZB, SppZ, TppZ, z_gammat);
 
 
 %% topobaric surface
@@ -154,9 +155,10 @@ OPTS.x0 = 180; OPTS.y0 = 0; % Pacific
 OPTS.FIGS_SHOW = 0;
 OPTS.INTERPFN = @ppc_pchip;
 OPTS.WRAP = [1;1];
+OPTS.ITER = 50; % number of iterations
 
 %% omega_hel
-fprintf('omega_hel');
+fprintf('omega_hel\n');
 OPTS.data_cube=0;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
@@ -167,13 +169,12 @@ OPTS.TK = 8e-9;
 
 OPTS.CHOLESKY = 0;
 OPTS.LSQLIN = 0;
-OPTS.ITER = 50;
 OPTS.MODE = 1;
 
 [z_hel,s_hel,t_hel, ~,d_hel] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
 
 %% omega_hel_Tz
-fprintf('omega_hel_Tz');
+fprintf('omega_hel_Tz\n');
 OPTS.data_cube=0;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
@@ -182,13 +183,12 @@ OPTS.TK = 1e-11;
 
 OPTS.CHOLESKY = 0;
 OPTS.LSQLIN = 0;
-OPTS.ITER = 50;
 OPTS.MODE = 9;
 
 [z_helTz,s_helTz,t_helTz, ~,d_helTz] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
 
 %% omega_hel_Sz
-fprintf('omega_hel_Sz');
+fprintf('omega_hel_Sz\n');
 OPTS.data_cube=0;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
@@ -197,13 +197,12 @@ OPTS.TK = 1e-13;
 
 OPTS.CHOLESKY = 0;
 OPTS.LSQLIN = 0;
-OPTS.ITER = 50;
 OPTS.MODE = 10;
 
 [z_helSz,s_helSz,t_helSz, ~,d_helSz] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
            
 %% omega_s
-fprintf('omega_s');
+fprintf('omega_s\n');
 OPTS.data_cube=0;
 OPTS.STRAT = 1;
 OPTS.SHEAR = 1;
@@ -215,13 +214,12 @@ OPTS.H_SIM = 0;
 OPTS.TOL_LSQR_REL = 1e-6;
 
 OPTS.CHOLESKY = 0;
-OPTS.ITER = 50;
 OPTS.MODE = 2;
 
 [zns_s,sns_s,tns_s, ~, d_s] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
 
 %% omega_s2xy
-fprintf('omega_s2xy');
+fprintf('omega_s2xy\n');
 OPTS.STRAT = 1;
 OPTS.SHEAR = 1;
 OPTS.H_SIM = 0;
@@ -230,14 +228,13 @@ OPTS.LM = 0;
 % OPTS.TK = 1e-9;
 OPTS.TK = 1e-9;
 
-OPTS.ITER = 50;
 OPTS.CHOLESKY = 0;
 OPTS.MODE = 6;
 
 [zns_s2xy,sns_s2xy,tns_s2xy, ~, d_s2xy] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
 
 %% omega_hel_s2xy 
-fprintf('omega_hel_s2xy');
+fprintf('omega_hel_s2xy\n');
 OPTS.data_cube=0;
 OPTS.SHEAR = 1;
 OPTS.STRAT = 1;
@@ -252,7 +249,6 @@ OPTS.FIGS_SHOW = 0;
 
 OPTS.CHOLESKY = 0;
 OPTS.LSQLIN = 0;
-OPTS.ITER = 50;
 OPTS.MODE = 8;
 
 [z_hels2xy,s_hels2xy,t_hels2xy, ~,d_hels2xy] = omega_hel_surface(SB, TB, ZB, U, V, zns, OPTS);
