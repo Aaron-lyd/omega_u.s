@@ -3,46 +3,46 @@
 
 ### gamma^SCV
 
-The pressure-invariant neutral density variable (Lang et al., 2020) which is created by using SCV (submesoscle coherent vortices) methods  to connect the observation bottle with th reference data.
+The pressure-invariant neutral density variable (Lang et al., 2020) which uses SCV (submesoscle coherent vortices) methods to connect the observation bottle with the reference data.
 
 ### gamma^n
 
-Neutral density based on Jackett and McDougall (1997).
+Neutral density based on Jackett and McDougall (1997), which uses the NTP (Neutral Tangent Plane) to connect the observation bottle with the reference data.
 
 # Neutral Surfaces
 ## Software for approximately neutral surfaces and geostrophic streamfunctions
 
 ### Approximately Neutral Surfaces
 
-In the absence of irreversible mixing, fluid parcels in the ocean move such that they are always at their level of neutral buoyancy with their environment.  This constrains the direction of flow lie in a plane, called the neutral tangent plane. This plane is well-defined at every point in the ocean.  A neutral surface is an extensive 2D surface that is everywhere aligned with the neutral tangent plane (McDougall 1987).  However, neutral surfaces are not well-defined 2D surfaces -- a consequence of the non-linear equation of state for the density of seawater, and the resulting non-zero neutral helicity in the ocean (McDougall and Jackett 1988).  Hence, physical oceanographers craft approximately neutral surfaces, which are well-defined extensive 2D surfaces that are everywhere approximately aligned with the neutral tangent plane.  The following approximately neutral surfaces may be calculated with this software package. 
+In the absence of irreversible mixing, fluid parcels in the ocean move such that they are always at their level of neutral buoyancy with their environment.  This constrains the flow such that infinitesimal displacements lie in a plane, called the neutral tangent plane. This plane is well-defined at every point in the ocean.  A neutral surface is an extensive 2D surface that is everywhere aligned with the neutral tangent plane (McDougall 1987).  However, neutral surfaces are not well-defined 2D surfaces -- a consequence of the non-linear equation of state for the density of seawater, and the resulting non-zero neutral helicity in the ocean (McDougall and Jackett 1988).  Hence, physical oceanographers craft approximately neutral surfaces (ANSs), which are well-defined extensive 2D surfaces that are everywhere approximately aligned with the neutral tangent plane.  The following approximately neutral surfaces may be calculated with this software package. 
 
 #### Omega surfaces
 
-Omega surfaces (Klocker et al., 2009;  Stanley et al. 2021) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error. 
+Omega surfaces (Klocker et al., 2009;  Stanley et al. 2021) are highly accurate approximately neutral surfaces, formed from an iterative procedure that solves a global least squares problem to minimize the neutrality error.
 
 #### Omega_s surfaces
 
-The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the slope error. 
+The ANS that minimizes the slope error.
 
 #### Omega_s^2 surfaces
 
-The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the fictitious diapyncal diffusivity. 
+The ANS that minimizes the fictitious diapyncal diffusivity. 
 
 #### Omega_u.s surfaces
 
-The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the square of the spurious diasurface velocity.
+The ANS that minimizes the spurious diasurface velocity.
 
 #### Omega_u.sTz surfaces
 
-The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the square of the spurious diasurface velocity times the veritial gradient of the temperature.
+The ANS that minimizes the spurious diasurface velocity times the veritial gradient of the temperature.
 
 #### Omega_u.sSz surfaces
 
-The ANS that formed from an iterative procedure that solves a global least squares problem to minimize the square of the spurious diasurface velocity times the veritial gradient of the salinity.
+The ANS that minimizes the spurious diasurface velocity times the veritial gradient of the salinity.
 
 #### Omega_u.s+s^2 surfaces
 
-The combination of Omega_u.s and Omega_s^2.
+The ANS that minimizes a combination of those quantities minimized by Omega_u.s and Omega_s^2.
 
 
 
@@ -55,12 +55,13 @@ The combination of Omega_u.s and Omega_s^2.
 - `./README.md                        `- this file
 
 ## Requirements:
-MATLAB 2016b or higher (tested on 2017b, 2018b, and 2020a) with the Optimization Toolbox
+- MATLAB 2016b (tested on 2020a) or higher with the Optimization Toolbox
+- [neutral-surfaces](https://github.com/geoffstanley/neutral-surfaces/)
 
 
 ## Installation:
-1. To run the code, neutral-surfaces (by geoffstanley) repository needs to be installed firstly
-2. Run "addpath(genpath(<<The path to this repository>>))"
+1. First install `neutral-surfaces`. In MATLAB, check that `which omega_surface` succeeds.
+2. In MATLAB, run `addpath(genpath(<<The path to this repository>>))`, modifying the path as necessary.
 
 
 
