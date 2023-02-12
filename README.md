@@ -10,7 +10,7 @@ The pressure-invariant neutral density variable (Lang et al., 2020) which uses S
 Neutral density based on Jackett and McDougall (1997), which uses the NTP (Neutral Tangent Plane) to connect the observation bottle with the reference data.
 
 # Neutral Surfaces
-## Software for approximately neutral surfaces and geostrophic streamfunctions
+## Software for approximately neutral surfaces (ANSs)
 
 ### Approximately Neutral Surfaces
 
